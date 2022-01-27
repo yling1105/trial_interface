@@ -10,7 +10,7 @@ library(DiagrammeR)
 add_inclu_idx <- 1
 add_exclu_idx <- 1
 
-source_python('clinical_trial_py.py')
+#åsource_python('clinical_trial_py.py')
 
 # Initialize the output dataframe -----------------------------------------
 

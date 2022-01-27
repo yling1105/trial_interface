@@ -21,7 +21,7 @@ server <- function(input, output, session) {
     } 
     
     dataset <- load_json_py(file1$datapath)
-    dataset <- map_clinical_trial_dump(dataset)
+    #dataset <- map_clinical_trial_dump(dataset)
     dataset <- fromJSON(dataset)
     sample <- list()
     sample[['inclusion']] <- dataset$inclusion
