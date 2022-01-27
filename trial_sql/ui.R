@@ -43,6 +43,8 @@ sidebar <- dashboardSidebar(
     actionBttn(inputId = "generate", label = "Generate report",
                style = "material-flat", color='primary'),
     
+    menuItem("Templates", tabName='temp_page', icon=icon("bars")),
+    
     menuItem("Main Dashboard", tabName = 'dashboard', icon = icon("dashboard"),
              menuSubItem("Inclusion criteria", tabName = 'inclu_page', icon = icon("check")),
              menuSubItem("Exclusion criteria", tabName = "exclu_page", icon = icon("close")),
@@ -57,17 +59,19 @@ sidebar <- dashboardSidebar(
     tags$hr(),
     
     fluidRow(
-      column(width=3, actionButton("save", "Save" ,
-                                   icon("save"),
-                                   style = "color: #fff; background-color: #1E90FF; border-color: #fff;width:260;padding: 5px 5px 5px 5px;margin: 5px 5px 5px 5px; ")),
-      
-      column(width=3,actionButton('updateResults', 'Update', icon("refresh"),
-                                  style = "color: #fff; background-color: #27ae60; border-color: #fff;padding: 5px 5px 5px 5px;margin: 5px 5px 5px 5px; "))
+      column(width=3, actionButton("save", "Save" , icon("save"),
+                                   style = "color: #fff; background-color: #1E90FF; border-color: #fff;padding: 5px 5px 5px 5px;margin: 5px 5px 10px 18px; ")),
+      column(width=3, actionButton('updateResults', 'Update', icon("refresh"),
+                                   style = "color: #fff; background-color: #27ae60; border-color: #fff;padding: 5px 5px 5px 5px;margin: 5px 5px 5px 5px; ")),
+      column(width=3, downloadButton('download_js', 'Download', class='dl')),
+      tags$head(tags$style(".dl{background-color:coral;} .dl{color: black;} .dl{margin: 5px 5px 5px 5px;} .dl{padding: 5px 5px 5px 5px;}"))
     ),
     
     tags$hr(),
     
-    menuItem("Visualization", tabName = 'vis', icon=icon("rocket"))
+    menuItem("Processing Workflow", tabName = 'flow', icon=icon("rocket")),
+    
+    menuItem("Cohort Summary", tabName = 'summary', icon=icon("bar-chart"))
     
     
     
@@ -104,8 +108,12 @@ body <- dashboardBody(
             conditionalPanel("input.Add%2 == 1", uiOutput("add_cri"))
     ),
     
-    tabItem(tabName = "vis",
-            conditionalPanel("input$updateResults%2==1", DiagrammeROutput("cri_flow")))
+    tabItem(tabName = "flow",
+            conditionalPanel("input$updateResults%2==1", DiagrammeROutput("cri_flow"))),
+    
+    tabItem(tabName = "summary")
+    
+  
   )
 )
 

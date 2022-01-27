@@ -28,6 +28,15 @@ server <- function(input, output, session) {
     sample[['exclusion']] <- dataset$exclusion
     sample
   })
+
+  # template generate page --------------------------------------------------
+
+  output$template_page <- eventReactive(input$temp_generate, {
+    
+  })
+  
+  
+  
   
   inclu_sample <- eventReactive(input$generate, {
     inclu_cri <- list()
