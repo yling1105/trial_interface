@@ -31,13 +31,69 @@ server <- function(input, output, session) {
 
   # template generate page --------------------------------------------------
 
-  output$template_page <- eventReactive(input$temp_generate, {
+  template_page <- eventReactive(input$temp_generate, {
+    inclu_lst <- sample()[['inclusion']]
+    exclu_lst <- sample()[['exclusion']]
+    ni <- length(inclu_lst)
+    ne <- length(exclu_lst)
+    n <- ni + ne
     
+    template_page <- tagList()
+    
+    for (i in c(1 : ni)){
+      cri <- inclu_lst[[i]]
+      temptemp <-  cri[['mapped_templates']]
+      critext <- temptemp[['display_text']]
+      temp_lst <- list()
+      if (length(temptemp) > 1){
+        for (j in c(1:length(temptemp) - 1)){
+          tempj <- temptemp[[j]][['template']]
+          temp_lst <- append(temp_lst, tempj)
+        }
+      }
+      selection <- multiInput(inputId = paste0('temp_page_',i), label='Pick templates for the criteria:',
+                              choices = c('Demographic', 'Condition by Diagnosis Code', 'Prescription', 'Event 1', 'Event 2', 'Event 3', 'Lab 1', 'Lab 2', 'Lab 3', 'Order'),
+                              selected = temp_lst
+                              )
+      template_page <- tagAppendChild(template_page, h1(paste('Inclusion Criteria', i)))
+      template_page <- tagAppendChild(template_page, fluidRow(
+        column(width = 6, selection),
+        column(width = 6, critext)
+      ))
+      template_page <- tagAppendChild(template_page, tags$hr())
+    }
+    
+    for (i in c(1 : ne)){
+      idx <-  ni + i
+      cri <- exclu_lst[[i]]
+      temptemp <-  cri[['mapped_templates']]
+      critext <- temptemp[['display_text']]
+      temp_lst <- list()
+      if (length(temptemp) > 1){
+        for (j in c(1:length(temptemp) - 1)){
+          tempj <- temptemp[[j]][['template']]
+          temp_lst <- append(temp_lst, tempj)
+        }
+      }
+      selection <- multiInput(inputId = paste0('temp_page_',idx), label='Pick templates for the criteria:',
+                              choices = c('Demographic', 'Condition by Diagnosis Code', 'Prescription', 'Event 1', 'Event 2', 'Event 3', 'Lab 1', 'Lab 2', 'Lab 3', 'Order'),
+                              selected = temp_lst
+      )
+      template_page <- tagAppendChild(template_page, h1(paste('Exclusion Criteria', i)))
+      template_page <- tagAppendChild(template_page, fluidRow(
+        column(width = 6, selection),
+        column(width = 6, critext)
+      ))
+      template_page <- tagAppendChild(template_page, tags$hr())
+    }
+    
+    template_page
   })
   
+  output$template_page <- renderUI(template_page())
   
-  
-  
+
+  # Modify templates --------------------------------------------------------
   inclu_sample <- eventReactive(input$generate, {
     inclu_cri <- list()
     inclu_lst <- sample()[['inclusion']]

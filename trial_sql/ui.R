@@ -73,11 +73,6 @@ sidebar <- dashboardSidebar(
     
     menuItem("Cohort Summary", tabName = 'summary', icon=icon("bar-chart"))
     
-    
-    
-    
-    
-    
   )
 )
 
@@ -93,6 +88,11 @@ body <- dashboardBody(
   ),
   
   tabItems(
+    tabItem(
+      tabName = 'Templates',
+      conditionalPanel("output.getData == True && input.generate%2 == 1", uioutput("template_page")),      
+    ),
+    
     tabItem(
       tabName="inclu_page",
       conditionalPanel("output.getData == True && input.generate%2 == 1",uiOutput("inclu_ui")),

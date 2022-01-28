@@ -10,13 +10,48 @@ library(DiagrammeR)
 add_inclu_idx <- 1
 add_exclu_idx <- 1
 
-#åsource_python('clinical_trial_py.py')
+source_python('clinical_trial_py.py')
 
-# Initialize the output dataframe -----------------------------------------
 
-# sample <- fromJSON(file = 'Parsed_NCT03805308_Dummy.json')
-# inclu_lst <- sample$inclusion
-# exclu_lst <- sample$exclusion
+# Get initial values from original file -----------------------------------
+
+initial <- function(lst){
+  initial_val <- list()
+  
+  for (i in c(1:length(lst) - 1)){
+    
+    if ("template" %in% names(lst[[i]])){
+      temp <- lst[[i]][['template']]
+      initial_val[[temp]] <- list()
+      if (temp == 'Demographic'){
+        initial_val[[temp]][['Age from ( include )']] <- lst[[i]][['Age from ( include )']]
+        initial_val[[temp]][['Age to ( include )']] <- lst[[i]][['Age to ( include )']]
+        initial_val[[temp]][['Race is']] <- lst[[i]][['Race is']]
+        initial_val[[temp]][['Gender is']] <- lst[[i]][['Gender is']]
+        initial_val[[temp]][['Ethnic_Group is']] <- lst[[i]][['Ethnic_Group is']]
+      } else if (temp == 'Condition by Diagnosis Code'){
+        initial_val[[temp]][['Diagnosis Code is']] <- lst[[i]][['Diagnosis Code is']]
+        initial_val[[temp]][['Diagnosis Code starts with']] <- lst[[i]][['Diagnosis Code starts with']]
+        initial_val[[temp]][['Diagnosis Description contains']] <- lst[[i]][['Diagnosis Description contains']]
+        initial_val[[temp]][['Time Period within']] <- lst[[i]][['Time Period within']]
+        initial_val[[temp]][['Search by diagnosis group']] <- lst[[i]][['Search by diagnosis group']]
+        initial_val[[temp]][['Encounters']] <- lst[[i]][['Encounters']]
+      } else if (temp == 'Prescription'){
+        initial_val[[temp]][['Drug description contains']] <- lst[[i]][['Drug description contains']]
+        initial_val[[temp]][['Time Period within']] <- lst[[i]][['Time Period within']]
+        initial_val[[temp]][['Encounter based']] <- lst[[i]][['Encounter based']]
+      } else if (temp == "Event 1"|temp == "Event 2"|temp == "Event 3"){
+        initial_val[[temp]][['Event Name contains']] <- lst[[i]][['Event Name contains']]
+        initial_val[[temp]][['Value from ( include )']] <- lst[[i]][['Value from ( include )']]
+        initial_val[[temp]][['Value from ( not include )']] <- lst[[i]][['Value from ( not include )']]
+        initial_val[[temp]][['Value to ( include )']] <- lst[[i]][['Value to ( include )']]
+        initial_val[[temp]][['Value to ( not include )']] <- lst[[i]][['Value to ( not include )']]
+        initial_val[[temp]][['Time Period within']] <- lst[[i]][['Time Period within']]
+      }
+    }
+    
+  }
+}
 
 # map templates to div output ---------------------------------------------
 
@@ -143,6 +178,7 @@ template_map <- function(initial, idx_temp){
     )
   }
 }
+
 
 
 # add_template function ---------------------------------------------------
