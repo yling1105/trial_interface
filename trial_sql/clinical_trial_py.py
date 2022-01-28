@@ -394,7 +394,7 @@ def get_data_from_templdate ( mapped_template ):
                 )
                 """.format(
                 mapped_template.get('Lab Name contains',''),
-                mapped_template.get('Loinc Code',''),                
+                mapped_template.get('LOINC is',''),                
                 mapped_template.get('Value from ( include )',''),
                 mapped_template.get('Value from ( not include )',''),
                 mapped_template.get('Value to ( include )',''),
