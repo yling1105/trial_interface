@@ -17,11 +17,11 @@ solid_entities = {'Condition':'Condition by Diagnosis Code',
                   'Procedure':'Order'
                  }
                  
-engine = create_engine('postgresql+psycopg2://stroke:YI`?vhG7d9@129.106.31.45:15432/covid19')
+engine = create_engine()
 
 
 def getConnection():
-    return psycopg2.connect("dbname='covid19' user='stroke' password='YI`?vhG7d9' host='129.106.31.45' port='15432' ")  
+    return psycopg2.connect()  
     raise NotImplementedError
 
 def load_json_py(j_file):
@@ -510,7 +510,7 @@ def get_pat_data(person_ids_str):
 #    sql_conn.commit()
 #    sql_conn.close()
     print(final_pat.shape)
-    return  final_pat.to_dict(orient="records")
+    return  final_pat.to_dict()
 
  
  
