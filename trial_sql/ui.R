@@ -40,7 +40,7 @@ sidebar <- dashboardSidebar(
       buttonLabel = "Browse"
     ),
     
-    actionBttn(inputId = "generate", label = "Generate report",
+    actionBttn(inputId = "temp_generate", label = "Generate report",
                style = "material-flat", color='primary'),
     
     menuItem("Templates", tabName='temp_page', icon=icon("bars")),
@@ -89,8 +89,8 @@ body <- dashboardBody(
   
   tabItems(
     tabItem(
-      tabName = 'Templates',
-      conditionalPanel("output.getData == True && input.generate%2 == 1", uioutput("template_page")),      
+      tabName = 'temp_page',
+      conditionalPanel("output.getData == True && input.temp_generate%2 == 1", uiOutput("template_page")),      
     ),
     
     tabItem(

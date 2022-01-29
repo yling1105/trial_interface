@@ -20,9 +20,9 @@ server <- function(input, output, session) {
       return() 
     } 
     
-    dataset <- load_json_py(file1$datapath)
+    #dataset <- load_json_py(file1$datapath)
     #dataset <- map_clinical_trial_dump(dataset)
-    dataset <- fromJSON(dataset)
+    dataset <- fromJSON(file=file1$datapath)
     sample <- list()
     sample[['inclusion']] <- dataset$inclusion
     sample[['exclusion']] <- dataset$exclusion
@@ -92,25 +92,28 @@ server <- function(input, output, session) {
   
   output$template_page <- renderUI(template_page())
   
-
-  # Modify templates --------------------------------------------------------
+  # Modify templates' pages --------------------------------------------------------
+  
   inclu_sample <- eventReactive(input$generate, {
     inclu_cri <- list()
     inclu_lst <- sample()[['inclusion']]
-    
     inclu_sample <- tagList()
     
     for (i in c(1:length(inclu_lst))){
       idx_temp0 <- paste("inclu", i)
       inclu_temp <- list()
       temp <- inclu_lst[[i]]$mapped_templates
+      temp_dict <- initial(temp)
       inclu_text <- inclu_lst[[i]][['display_text']]
       logic_temp <- inclu_lst[[i]][['internal_logic']]
-      if (length(temp) != 0){
+      cri_id <- paste0('temp_page',i)
+      temp_lst <- output[[cri_id]]
+      
+      if (length(temp_lst) > 0){
         for (j in c(1:length(temp))){
-          kk <- temp[[j]]
+          kk <- temp_lst[[j]]
           idx_temp1 <- paste(idx_temp0, j)
-          inclu_temp[[j]] <- template_map(kk, idx_temp1)
+          inclu_temp[[j]] <- template_map(kk, temp_dict, idx_temp1)
         }
       }
       
@@ -138,17 +141,18 @@ server <- function(input, output, session) {
     
     exclu_sample <- tagList()
     
-    for (i in c(1:length(exclu_lst))){
+    for (i in c(1:(length(exclu_lst)-1))){
       idx_temp0 <- paste('exclu', i)
       exclu_temp <- list()
       temp <- exclu_lst[[i]]$mapped_templates
+      temp_dict <- initial(temp)
       exclu_text <- exclu_lst[[i]][['display_text']]
       logic_temp <- exclu_lst[[i]][['internal_logic']]
       if (length(temp) != 0){
         for (j in c(1:length(temp))){
           kk <- temp[[j]]
           idx_temp1 <- paste(idx_temp0, j)
-          exclu_temp[[j]] <- template_map(kk, idx_temp1)
+          exclu_temp[[j]] <- template_map(kk, temp_dict, idx_temp1)
         }
       }
       
@@ -186,7 +190,7 @@ server <- function(input, output, session) {
     inclu <- new_data[['inclusion']]
     exclu <- new_data[['exclusion']]
     
-    ## save inclusion part -----------------------------------------------------
+    # save inclusion part -----------------------------------------------------
     
     for (i in c(1:length(inclu))){
       idx_temp0 <- paste('inclu', i)
