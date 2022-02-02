@@ -28,9 +28,85 @@ server <- function(input, output, session) {
     sample[['exclusion']] <- dataset$exclusion
     sample
   })
-
+  
+  # Template intro popup ----------------------------------------------------
+  
+  onclick('demo_intro', showModal(modalDialog(
+    title = "Demographic template",
+    tags$div(
+      tags$ul(
+        tags$li("Age"),
+        tags$li("Gender"),
+        tags$li("Race"),
+        tags$li("Ethnic Group")
+      )
+    )  
+  )))
+  
+  onclick('diag_intro', showModal(modalDialog(
+    title = "Diagnosis template",
+    tags$div(
+      tags$ul(
+        tags$li("Diagnosis Code is"),
+        tags$li("Diagnosis Code starts with"),
+        tags$li("Diagnosis Description contains"),
+        tags$li("Time Period within"),
+        tags$li("Whether search by diagnosis group"),
+        tags$li("Encounter based")
+      )
+    )  
+  )))
+  
+  onclick('drug_intro', showModal(modalDialog(
+    title = "Prescription template",
+    tags$div(
+      tags$ul(
+        tags$li("Drug description contains"),
+        tags$li("Time Period within"),
+        tags$li("Encounter based")
+      )
+    )  
+  )))
+  
+  onclick('event_intro', showModal(modalDialog(
+    title = "Event template",
+    tags$div(
+      tags$ul(
+        tags$li("Event name contains"),
+        tags$li("Value range: (>, <, >=, <=)"),
+        tags$li("Time Period within"),
+        tags$li("Encounter based")
+      )
+    )  
+  )))
+  
+  onclick('lab_intro', showModal(modalDialog(
+    title = "Lab template",
+    tags$div(
+      tags$ul(
+        tags$li("Lab name contains"),
+        tags$li("LOINC code is:"),
+        tags$li("Value range: (>, <, >=, <=)"),
+        tags$li("Time Period within"),
+        tags$li("Encounter based")
+      )
+    )  
+  )))
+  
+  onclick('order_intro', showModal(modalDialog(
+    title = "Order template",
+    tags$div(
+      tags$ul(
+        tags$li("Procedure name contains"),
+        tags$li("Time Period within"),
+        tags$li("Encounter based")
+      )
+    )  
+  )))
+  
+  
   # template generate page --------------------------------------------------
-
+  
   template_page <- eventReactive(input$temp_generate, {
     inclu_lst <- sample()[['inclusion']]
     exclu_lst <- sample()[['exclusion']]
@@ -41,51 +117,81 @@ server <- function(input, output, session) {
     template_page <- tagList()
     
     for (i in c(1 : ni)){
+      idx_eve <- 1
+      idx_lab <- 1
       cri <- inclu_lst[[i]]
       temptemp <-  cri[['mapped_templates']]
-      critext <- temptemp[['display_text']]
-      temp_lst <- list()
-      if (length(temptemp) > 1){
-        for (j in c(1:length(temptemp) - 1)){
+      critext <- cri[['display_text']]
+      temp_lst <- c()
+      if (length(temptemp) > 0){
+        for (j in c(1:length(temptemp))){
           tempj <- temptemp[[j]][['template']]
+          if (tempj == 'Condition by Diagnosis Code'){
+            tempj <- 'Diagnosis'
+          } else if (tempj == 'Event') {
+            tempj <- paste('Event', idx_eve)
+            idx_eve <- idx_eve + 1
+          } else if (tempj == 'Lab') {
+            tempj <- paste('Lab', idx_lab)
+            idx_lab <- idx_lab + 1
+          }
           temp_lst <- append(temp_lst, tempj)
         }
       }
+      
+      #print(temp_lst)
       selection <- multiInput(inputId = paste0('temp_page_',i), label='Pick templates for the criteria:',
-                              choices = c('Demographic', 'Condition by Diagnosis Code', 'Prescription', 'Event 1', 'Event 2', 'Event 3', 'Lab 1', 'Lab 2', 'Lab 3', 'Order'),
+                              choices = c('Demographic', 'Diagnosis', 'Prescription', 'Event 1', 'Event 2', 'Event 3', 'Lab 1', 'Lab 2', 'Lab 3', 'Order'),
                               selected = temp_lst
-                              )
+      )
       template_page <- tagAppendChild(template_page, h1(paste('Inclusion Criteria', i)))
       template_page <- tagAppendChild(template_page, fluidRow(
         column(width = 6, selection),
-        column(width = 6, critext)
+        column(width = 6, HTML(critext))
       ))
       template_page <- tagAppendChild(template_page, tags$hr())
     }
-    
+    #print("Exclusion")
     for (i in c(1 : ne)){
+      idx_eve <- 1
+      idx_lab <- 1
       idx <-  ni + i
       cri <- exclu_lst[[i]]
       temptemp <-  cri[['mapped_templates']]
-      critext <- temptemp[['display_text']]
-      temp_lst <- list()
-      if (length(temptemp) > 1){
-        for (j in c(1:length(temptemp) - 1)){
+      critext <- cri[['display_text']]
+      temp_lst <- c()
+      if (length(temptemp) > 0){
+        for (j in c(1:length(temptemp))){
           tempj <- temptemp[[j]][['template']]
+          tempj <- temptemp[[j]][['template']]
+          if (tempj == 'Condition by Diagnosis Code'){
+            tempj <- 'Diagnosis'
+          } else if (tempj == 'Event') {
+            tempj <- paste('Event',idx_eve)
+            idx_eve <- idx_eve + 1
+          } else if (tempj == 'Lab') {
+            tempj <- paste('Lab', idx_lab)
+            idx_lab <- idx_lab + 1
+          }
+          
           temp_lst <- append(temp_lst, tempj)
         }
       }
+      print(temp_lst)
       selection <- multiInput(inputId = paste0('temp_page_',idx), label='Pick templates for the criteria:',
-                              choices = c('Demographic', 'Condition by Diagnosis Code', 'Prescription', 'Event 1', 'Event 2', 'Event 3', 'Lab 1', 'Lab 2', 'Lab 3', 'Order'),
+                              choices = c('Demographic', 'Diagnosis', 'Prescription', 'Event 1', 'Event 2', 'Event 3', 'Lab 1', 'Lab 2', 'Lab 3', 'Order'),
                               selected = temp_lst
       )
       template_page <- tagAppendChild(template_page, h1(paste('Exclusion Criteria', i)))
       template_page <- tagAppendChild(template_page, fluidRow(
         column(width = 6, selection),
-        column(width = 6, critext)
+        column(width = 6, HTML(critext))
       ))
       template_page <- tagAppendChild(template_page, tags$hr())
+      
     }
+    
+    template_page <- tagAppendChild(template_page, actionBttn(inputId = 'generate', label = 'Generate', style = "material-flat", color='primary'))
     
     template_page
   })
@@ -106,11 +212,10 @@ server <- function(input, output, session) {
       temp_dict <- initial(temp)
       inclu_text <- inclu_lst[[i]][['display_text']]
       logic_temp <- inclu_lst[[i]][['internal_logic']]
-      cri_id <- paste0('temp_page',i)
-      temp_lst <- output[[cri_id]]
-      
+      cri_id <- paste0('temp_page_',i)
+      temp_lst <- input[[cri_id]]
       if (length(temp_lst) > 0){
-        for (j in c(1:length(temp))){
+        for (j in c(1:length(temp_lst))){
           kk <- temp_lst[[j]]
           idx_temp1 <- paste(idx_temp0, j)
           inclu_temp[[j]] <- template_map(kk, temp_dict, idx_temp1)
@@ -138,20 +243,26 @@ server <- function(input, output, session) {
   exclu_sample <- eventReactive(input$generate, {
     exclu_cri <- list()
     exclu_lst <- sample()[['exclusion']]
-    
+    inclu_lst <- sample()[['inclusion']]
     exclu_sample <- tagList()
+    ni <- length(inclu_lst)
     
-    for (i in c(1:(length(exclu_lst)-1))){
+    for (i in c(1:length(exclu_lst))){
       idx_temp0 <- paste('exclu', i)
       exclu_temp <- list()
       temp <- exclu_lst[[i]]$mapped_templates
       temp_dict <- initial(temp)
       exclu_text <- exclu_lst[[i]][['display_text']]
       logic_temp <- exclu_lst[[i]][['internal_logic']]
-      if (length(temp) != 0){
-        for (j in c(1:length(temp))){
-          kk <- temp[[j]]
+      e_idx <- i + ni
+      cri_id <- paste0('temp_page_',e_idx)
+      temp_lst <- input[[cri_id]]
+      
+      if (length(temp_lst) != 0){
+        for (j in c(1:length(temp_lst))){
+          kk <- temp_lst[[j]]
           idx_temp1 <- paste(idx_temp0, j)
+          print(kk)
           exclu_temp[[j]] <- template_map(kk, temp_dict, idx_temp1)
         }
       }
@@ -844,16 +955,16 @@ server <- function(input, output, session) {
   
   # Download json file ------------------------------------------------------
   
-  # output$ddjson <- downloadHandler(
-  #   filename <- function() {
-  #     paste("data_", Sys.Date(), ".json")
-  #   },
-  #   content = function(file) {
-  #     list.save(new_data(), file)
-  #   },
-  #   
-  #   contentType =  "application/json"
-  #)
+  output$ddjson <- downloadHandler(
+    filename <- function() {
+      paste("data_", Sys.Date(), ".json")
+    },
+    content = function(file) {
+      list.save(new_data(), file)
+    },
+    
+    contentType =  "application/json"
+  )
   
   
   # Interactive with database -----------------------------------------------
@@ -878,19 +989,27 @@ server <- function(input, output, session) {
     diagram <- "graph TB\n"
     for (i in c(1 : (n-1))){
       if (i <= n_inclu){
-        diagram <- paste0(diagram, "id",i,"(Inclusion Criteria ", i, ": ", "Criteria patients:", inclu[[i]]$criteria_patients, ", ", 
+        cri_text <- inclu[[i]][['text']]
+        cri_text <- gsub("\\(|\\)", "", cri_text)
+        diagram <- paste0(diagram, "id",i,"(Inclusion Criteria ", i, ": ", br(), cri_text, br(), "Criteria patients:", inclu[[i]]$criteria_patients, ", ", 
                           "Accumulate patients:", inclu[[i]]$accumulated_patients,")-->",
                           "id", i+1, "\n")
       } else if (i != n-1) {
         j <- i - n_inclu
-        diagram <- paste0(diagram, "id", i,"(Exclusion Criteria ", j, ": ", "Criteria patients:", exclu[[j]]$criteria_patients, ", ", 
+        cri_text <- exclu[[j]][['text']]
+        cri_text <- gsub("\\(|\\)", "", cri_text)
+        diagram <- paste0(diagram, "id", i,"(Exclusion Criteria ", j, ": ", br(), cri_text, br(), "Criteria patients:", exclu[[j]]$criteria_patients, ", ", 
                           "Accumulated patients:", exclu[[j]]$accumulated_patients,")-->",
                           "id", i+1, "\n")
       } else {
         j <- n - n_inclu - 1
-        diagram <- paste0(diagram, "id", i,"(Exclusion Criteria ", j, ": ", "Criteria patients:", exclu[[j]]$criteria_patients, ", ", 
+        cri_text <- exclu[[j]][['text']]
+        cri_text <- gsub("\\(|\\)", "", cri_text)
+        cri_text <- exclu[[j+1]][['text']]
+        cri_text <- gsub("\\(|\\)", "", cri_text)
+        diagram <- paste0(diagram, "id", i,"(Exclusion Criteria ", j, ": ",  br(), cri_text, br(),"Criteria patients:", exclu[[j]]$criteria_patients, ", ", 
                           "Accumulated patients:", exclu[[j]]$accumulated_patients,")-->",
-                          "id", i+1, "(Exclusion Criteria ", j+1, ": ", "Criteria patients:", exclu[[j]]$criteria_patients, ", ", 
+                          "id", i+1, "(Exclusion Criteria ", j+1, ": ", br(), cri_text, br(), "Criteria patients:", exclu[[j]]$criteria_patients, ", ", 
                           "Accumulated patients:", exclu[[j]]$accumulated_patients, ")","\n")
       }
     }

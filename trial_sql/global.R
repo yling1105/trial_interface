@@ -6,74 +6,91 @@ library(htmltools)
 library(rlist)
 library(reticulate)
 library(DiagrammeR)
+library(shinyjs)
+library(shinyBS)
 
 add_inclu_idx <- 1
 add_exclu_idx <- 1
 
-#source_python('clinical_trial_py.py')
+source_python('clinical_trial_py.py')
 
 
 # Get initial values from original file -----------------------------------
 
 initial <- function(lst){
   initial_val <- list()
-  
-  for (i in c(1:length(lst) - 1)){
-    
-    if ("template" %in% names(lst[[i]])){
-      temp <- lst[[i]][['template']]
-      initial_val[[temp]] <- list()
-      if (temp == 'Demographic'){
-        initial_val[[temp]][['Age from ( include )']] <- lst[[i]][['Age from ( include )']]
-        initial_val[[temp]][['Age to ( include )']] <- lst[[i]][['Age to ( include )']]
-        initial_val[[temp]][['Race is']] <- lst[[i]][['Race is']]
-        initial_val[[temp]][['Gender is']] <- lst[[i]][['Gender is']]
-        initial_val[[temp]][['Ethnic_Group is']] <- lst[[i]][['Ethnic_Group is']]
-      } else if (temp == 'Condition by Diagnosis Code'){
-        initial_val[[temp]][['Diagnosis Code is']] <- lst[[i]][['Diagnosis Code is']]
-        initial_val[[temp]][['Diagnosis Code starts with']] <- lst[[i]][['Diagnosis Code starts with']]
-        initial_val[[temp]][['Diagnosis Description contains']] <- lst[[i]][['Diagnosis Description contains']]
-        initial_val[[temp]][['Time Period within']] <- lst[[i]][['Time Period within']]
-        initial_val[[temp]][['Search by diagnosis group']] <- lst[[i]][['Search by diagnosis group']]
-        initial_val[[temp]][['Encounters']] <- lst[[i]][['Encounters']]
-      } else if (temp == 'Prescription'){
-        initial_val[[temp]][['Drug description contains']] <- lst[[i]][['Drug description contains']]
-        initial_val[[temp]][['Time Period within']] <- lst[[i]][['Time Period within']]
-        initial_val[[temp]][['Encounter based']] <- lst[[i]][['Encounter based']]
-      } else if (temp == "Event 1"|temp == "Event 2"|temp == "Event 3"){
-        initial_val[[temp]][['Event Name contains']] <- lst[[i]][['Event Name contains']]
-        initial_val[[temp]][['Value from ( include )']] <- lst[[i]][['Value from ( include )']]
-        initial_val[[temp]][['Value from ( not include )']] <- lst[[i]][['Value from ( not include )']]
-        initial_val[[temp]][['Value to ( include )']] <- lst[[i]][['Value to ( include )']]
-        initial_val[[temp]][['Value to ( not include )']] <- lst[[i]][['Value to ( not include )']]
-        initial_val[[temp]][['Time Period within']] <- lst[[i]][['Time Period within']]
-        initial_val[[temp]][['Encounter based']] <- lst[[i]][['Encounter based']]
-      } else if (temp == "Lab 1"|temp == "Lab 2"|ttemp == "Lab 3"){
-        initial_val[[temp]][['Lab Name contains']] <- lst[[i]][['Lab Name contains']]
-        initial_val[[temp]][['Loinc Code']] <- lst[[i]][['Loinc Code']]
-        initial_val[[temp]][['Value from ( include )']] <- lst[[i]][['Value from ( include )']]
-        initial_val[[temp]][['Value from ( not include )']] <- lst[[i]][['Value from ( not include )']]
-        initial_val[[temp]][['Value to ( include )']] <- lst[[i]][['Value to ( include )']]
-        initial_val[[temp]][['Value to ( not include )']] <- lst[[i]][['Value to ( not include )']]
-        initial_val[[temp]][['Time Period within']] <- lst[[i]][['Time Period within']]
-        initial_val[[temp]][['Encounter based']] <- lst[[i]][['Encounter based']]
-      } else if (temp == 'Order'){
-        initial_val[[temp]][['Procedure Name contains']] <- lst[[i]][['Procedure Name contains']]
-        initial_val[[temp]][['Time Period within']] <- lst[[i]][['Time Period within']]
-        initial_val[[temp]][['Encounter based']] <- lst[[i]][['Encounter based']]
-        
+  if (length(lst) > 0){
+    idx_eve <- 1
+    idx_lab <- 1
+    for (i in c(1:length(lst))){
+      
+      if ("template" %in% names(lst[[i]])){
+        temp <- lst[[i]][['template']]
+        #print(temp)
+        initial_val[[temp]] <- list()
+        if (temp == 'Demographic'){
+          initial_val[[temp]][['Age from ( include )']] <- lst[[i]][['Age from ( include )']]
+          initial_val[[temp]][['Age to ( include )']] <- lst[[i]][['Age to ( include )']]
+          initial_val[[temp]][['Race is']] <- lst[[i]][['Race is']]
+          initial_val[[temp]][['Gender is']] <- lst[[i]][['Gender is']]
+          initial_val[[temp]][['Ethnic_Group is']] <- lst[[i]][['Ethnic_Group is']]
+        } else if (temp == 'Condition by Diagnosis Code'){
+          temp <- 'Diagnosis'
+          initial_val[[temp]][['Diagnosis Code is']] <- lst[[i]][['Diagnosis Code is']]
+          initial_val[[temp]][['Diagnosis Code starts with']] <- lst[[i]][['Diagnosis Code starts with']]
+          initial_val[[temp]][['Diagnosis Description contains']] <- lst[[i]][['Diagnosis Description contains']]
+          initial_val[[temp]][['Time Period within']] <- lst[[i]][['Time Period within']]
+          initial_val[[temp]][['Search by diagnosis group']] <- lst[[i]][['Search by diagnosis group']]
+          initial_val[[temp]][['Encounters']] <- lst[[i]][['Encounters']]
+        } else if (temp == 'Prescription'){
+          initial_val[[temp]][['Drug description contains']] <- lst[[i]][['Drug description contains']]
+          initial_val[[temp]][['Time Period within']] <- lst[[i]][['Time Period within']]
+          initial_val[[temp]][['Encounter based']] <- lst[[i]][['Encounter based']]
+        } else if (temp == "Event"){
+          temp <- paste('Event', idx_eve)
+          idx_eve <- idx_eve + 1
+          initial_val[[temp]][['Event Name contains']] <- lst[[i]][['Event Name contains']]
+          initial_val[[temp]][['Value from ( include )']] <- lst[[i]][['Value from ( include )']]
+          initial_val[[temp]][['Value from ( not include )']] <- lst[[i]][['Value from ( not include )']]
+          initial_val[[temp]][['Value to ( include )']] <- lst[[i]][['Value to ( include )']]
+          initial_val[[temp]][['Value to ( not include )']] <- lst[[i]][['Value to ( not include )']]
+          initial_val[[temp]][['Time Period within']] <- lst[[i]][['Time Period within']]
+          initial_val[[temp]][['Encounter based']] <- lst[[i]][['Encounter based']]
+        } else if (temp == "Lab"){
+          temp <- paste("Lab", idx_lab)
+          idx_lab <- idx_lab + 1
+          initial_val[[temp]][['Lab Name contains']] <- lst[[i]][['Lab Name contains']]
+          initial_val[[temp]][['Loinc Code']] <- lst[[i]][['LOINC is']]
+          initial_val[[temp]][['Value from ( include )']] <- lst[[i]][['Value from ( include )']]
+          initial_val[[temp]][['Value from ( not include )']] <- lst[[i]][['Value from ( not include )']]
+          initial_val[[temp]][['Value to ( include )']] <- lst[[i]][['Value to ( include )']]
+          initial_val[[temp]][['Value to ( not include )']] <- lst[[i]][['Value to ( not include )']]
+          initial_val[[temp]][['Time Period within']] <- lst[[i]][['Time Period within']]
+          initial_val[[temp]][['Encounter based']] <- lst[[i]][['Encounter based']]
+          #print(initial_val[[temp]])
+        } else if (temp == 'Order'){
+          initial_val[[temp]][['Procedure Name contains']] <- lst[[i]][['Procedure Name contains']]
+          initial_val[[temp]][['Time Period within']] <- lst[[i]][['Time Period within']]
+          initial_val[[temp]][['Encounter based']] <- lst[[i]][['Encounter based']]
+          
+        }
       }
     }
-    
+    #print(initial_val)
+    return(initial_val)
+  } else {
+    return(initial_val)
   }
+  
 }
 
 # map templates to div output ---------------------------------------------
 
 template_map <- function(temp, temp_dict, idx_temp){
+  print(temp_dict)
   idx_temp <- as.character(idx_temp)
-
-  if (temp == 'Condition by Diagnosis Code'){
+  
+  if (temp == 'Diagnosis'){
     if (temp %in% names(temp_dict)){
       if ('Search by diagnosis group' %in% names(temp_dict[[temp]])){
         gr <- temp_dict[[temp]][['Search by diagnosis group']]
@@ -133,7 +150,7 @@ template_map <- function(temp, temp_dict, idx_temp){
     }
     
   } else if(temp == 'Demographic'){
-    if (temp %in% namees(temp_dict)){
+    if (temp %in% names(temp_dict)){
       if ('Gender is' %in% names(temp_dict[[temp]])){
         gr <- temp_dict[[temp]][['Gender is']]
       } else {
@@ -190,7 +207,7 @@ template_map <- function(temp, temp_dict, idx_temp){
     
   } else if (temp == 'Prescription'){
     if (temp %in% names(temp_dict)){
-      if ('Encounter based' %in% names(temp_dict)){
+      if ('Encounter based' %in% names(temp_dict[[temp]])){
         eb <- temp_dict[[temp]][['Search by diagnosis group']]
       } else {
         eb <- 'NULL'
@@ -228,7 +245,7 @@ template_map <- function(temp, temp_dict, idx_temp){
     
   } else if (temp == 'Event 1'|temp == 'Event 2'|temp == 'Event 3'){
     if (temp %in% names(temp_dict)){
-      if ('Encounter based' %in% names(temp_dict)){
+      if ('Encounter based' %in% names(temp_dict[[temp]])){
         eb <- temp_dict[[temp]][['Search by diagnosis group']]
       } else {
         eb <- 'NULL'
@@ -277,10 +294,12 @@ template_map <- function(temp, temp_dict, idx_temp){
         )
       )
     }
-   
+    
   } else if (temp == 'Lab 1'|temp == 'Lab 2'|temp == 'Lab 3'){
+    print(temp)
     if (temp %in% names(temp_dict)){
-      if ('Encounter based' %in% names(temp_dict)){
+      print(temp_dict[[temp]])
+      if ('Encounter based' %in% names(temp_dict[[temp]])){
         eb <- temp_dict[[temp]][['Search by diagnosis group']]
       } else {
         eb <- 'NULL'
