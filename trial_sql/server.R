@@ -177,7 +177,6 @@ server <- function(input, output, session) {
           temp_lst <- append(temp_lst, tempj)
         }
       }
-      print(temp_lst)
       selection <- multiInput(inputId = paste0('temp_page_',idx), label='Pick templates for the criteria:',
                               choices = c('Demographic', 'Diagnosis', 'Prescription', 'Event 1', 'Event 2', 'Event 3', 'Lab 1', 'Lab 2', 'Lab 3', 'Order'),
                               selected = temp_lst
@@ -191,15 +190,15 @@ server <- function(input, output, session) {
       
     }
     
-    template_page <- tagAppendChild(template_page, actionBttn(inputId = 'generate', label = 'Generate', style = "material-flat", color='primary'))
+    template_page <- tagAppendChild(template_page, actionButton(inputId = "generate",label = "Generate criteria",
+                                                                style = "color: #FFF8DC; background-color: #2F4F4F; border-color: #fff;padding: 5px 14px 5px 14px;margin: 5px 5px 5px 5px; "))
     
     template_page
   })
   
   output$template_page <- renderUI(template_page())
   
-  # Modify templates' pages --------------------------------------------------------
-  
+  # Inclusion page ----------------------------------------------------------
   inclu_sample <- eventReactive(input$generate, {
     inclu_cri <- list()
     inclu_lst <- sample()[['inclusion']]
@@ -225,12 +224,15 @@ server <- function(input, output, session) {
       logic_bttn <- pickerInput(
         inputId = paste('inclu_logic', idx_temp0),
         label = "Internal logic", 
-        choices = c('AND', 'OR'),
+        choices = c('AND', 'OR', 'BEFORE', 'AFTER'),
         selected = logic_temp
       )
       
+      time_interval <- textInput(inputId = paste('inclu_interval', idx_temp0), label="Time interval before or after:")
+      
       inclu_sample <- tagAppendChild(inclu_sample,h1(paste('Inclusion Criteria ', i)))
       inclu_sample <- tagAppendChild(inclu_sample, logic_bttn)
+      inclu_sample <- tagAppendChild(inclu_sample, time_interval)
       inclu_sample <- tagAppendChild(inclu_sample, fluidRow(
         column(width = 6, inclu_temp),
         column(width = 6, HTML(inclu_text))
@@ -239,7 +241,9 @@ server <- function(input, output, session) {
     }
     inclu_sample
   })
+  output$inclu_ui <- renderUI(inclu_sample())
   
+  # Exclusion page -----------------------------------------------------
   exclu_sample <- eventReactive(input$generate, {
     exclu_cri <- list()
     exclu_lst <- sample()[['exclusion']]
@@ -270,12 +274,15 @@ server <- function(input, output, session) {
       logic_bttn <- pickerInput(
         inputId = paste('exclu_logic', idx_temp0),
         label = "Internal logic", 
-        choices = c('AND', 'OR'),
+        choices = c('AND', 'OR', 'BEFORE', 'AFTER'),
         selected = logic_temp
       )
       
+      interval_text <- textInput(inputId = paste('exclu_interval', idx_temp0), label = 'Time interval before or after:')
+      
       exclu_sample <- tagAppendChild(exclu_sample,h1(paste('Exclusion Criteria ', i)))
       exclu_sample <- tagAppendChild(exclu_sample, logic_bttn)
+      exclu_sample <- tagAppendChild(exclu_sample, interval_text)
       exclu_sample <- tagAppendChild(exclu_sample, fluidRow(
         column(width = 6, exclu_temp),
         column(width = 6, HTML(exclu_text))
@@ -284,12 +291,6 @@ server <- function(input, output, session) {
     }
     exclu_sample
   })
-  # Inclusion page ----------------------------------------------------------
-  
-  output$inclu_ui <- renderUI(inclu_sample())
-  
-  # Exclusion criteria -----------------------------------------------------
-  
   output$exclu_ui <- renderUI(exclu_sample())
   
   
@@ -301,12 +302,13 @@ server <- function(input, output, session) {
     inclu <- new_data[['inclusion']]
     exclu <- new_data[['exclusion']]
     
-    # save inclusion part -----------------------------------------------------
+    ### save inclusion part -----------------------------------------------------
     
     for (i in c(1:length(inclu))){
       idx_temp0 <- paste('inclu', i)
       logic_temp <- input[[paste('inclu_logic', idx_temp0)]]
       new_data[['inclusion']][[i]][['internal_logic']] <- logic_temp
+      new_data[['inclusion']][[i]][['interval']] <- input[[paste('inclu_interval', idx_temp0)]]
       temp <- inclu[[i]][['mapped_templates']]
       
       if (length(temp) != 0){
@@ -317,8 +319,9 @@ server <- function(input, output, session) {
           ## Condition --------
           if (template_id == 'Condition by Diagnosis Code'){
             new_data[['inclusion']][[i]][["mapped_templates"]][[j]][['Diagnosis Code is']] <- input[[paste("diag_is_", idx_temp)]]
-            new_data[['inclusion']][[i]][["mapped_templates"]][[j]][['Diagnosis Codes starts with']] <- input[[paste("diag_like_", idx_temp)]]
+            new_data[['inclusion']][[i]][["mapped_templates"]][[j]][['Diagnosis Code starts with']] <- input[[paste("diag_like_", idx_temp)]]
             new_data[['inclusion']][[i]][["mapped_templates"]][[j]][['Diagnosis Description contains']] <- input[[paste("diag_desc_", idx_temp)]]
+            #new_data[['inclusion']][[i]][["mapped_templates"]][[j]][['Number of encounters']] <- input[[paste("diag_enc_", idx_temp)]]
             new_data[['inclusion']][[i]][["mapped_templates"]][[j]][['Time Period within']] <- input[[paste("diag_date_", idx_temp)]]
             
             if (length(input[[paste("diag_grp_", idx_temp)]]) ==0){
@@ -451,11 +454,12 @@ server <- function(input, output, session) {
       }
     }
     
-    ## save exclusion part -----------------------------------------------------
+    ### save exclusion part -----------------------------------------------------
     for (i in c(1:length(exclu))){
       idx_temp0 <- paste("exclu", i)
       logic_temp <- input[[paste('exclu_logic', i)]]
       new_data[['exclusion']][[i]][['internal_logic']] <- logic_temp
+      new_data[['exclusion']][[i]][['interval']] <- input[[paste('inclu_interval', idx_temp0)]]
       temp <- exclu[[i]][['mapped_templates']]
       if (length(temp) != 0){
         for (j in c(1:length(temp))){
@@ -465,8 +469,9 @@ server <- function(input, output, session) {
           ### Condition --------
           if (template_id == 'Condition by Diagnosis Code'){
             new_data[['exclusion']][[i]][["mapped_templates"]][[j]][['Diagnosis Code is']] <- input[[paste("diag_is_", idx_temp)]]
-            new_data[['exclusion']][[i]][["mapped_templates"]][[j]][['Diagnosis Codes starts with']] <- input[[paste("diag_like_", idx_temp)]]
+            new_data[['exclusion']][[i]][["mapped_templates"]][[j]][['Diagnosis Code starts with']] <- input[[paste("diag_like_", idx_temp)]]
             new_data[['exclusion']][[i]][["mapped_templates"]][[j]][['Diagnosis Description contains']] <- input[[paste("diag_desc_", idx_temp)]]
+            #new_data[['exclusion']][[i]][["mapped_templates"]][[j]][['Number of encounters']] <- input[[paste("diag_enc_", idx_temp)]]
             new_data[['exclusion']][[i]][["mapped_templates"]][[j]][['Time Period within']] <- input[[paste("diag_date_", idx_temp)]]
             
             if (length(input[[paste("diag_grp_", idx_temp)]]) == 0){
@@ -597,26 +602,27 @@ server <- function(input, output, session) {
       }
     }
     
-    ### Save added part -----------------
+    ### Save added part -----------------------------------------------------
     
-    if (input$addCriNum == '' || input$addCriNum == '0'){
-      
-    } else {
-      
+    if (input$addCriNum != '' & input$addCriNum != '0'){
       n_added <- strtoi(input$addCriNum)
-      
+      print(n_added)
       n_inclu <- length(sample()[['inclusion']])
       n_exclu <- length(sample()[['exclusion']])
+      
+      
       for (i in c(1:n_added)){
         temp_lst <- input[[paste("criTemp", i)]]
         clu <- input[[paste("clu", i)]]
         
-        #### Added inclusion ---------------
-        if (clu == 'inclu'){
+        # Added inclusion ---------------
+        if (clu == 'inclusion'){
           n_inclu <- n_inclu + 1
           new_data[['inclusion']][[n_inclu]] <- list()
           new_data[['inclusion']][[n_inclu]][["mapped_templates"]] <- list()
           new_data[['inclusion']][[n_inclu]][['internal_logic']] <- input[[paste('add_logic', i)]]
+          new_data[['inclusion']][[n_inclu]][['interval']] <- input[[paste('add_interval', i)]]
+          new_data[['inclusion']][[n_inclu]][['text']] <- input[[paste('add_text',i)]]
           for (j in c(1:length(temp_lst))){
             temp <- temp_lst[[j]]
             new_data[['inclusion']][[n_inclu]][["mapped_templates"]][[j]] <- list()
@@ -625,7 +631,7 @@ server <- function(input, output, session) {
               
               new_data[["inclusion"]][[n_inclu]][["mapped_templates"]][[j]][["template"]] <- 'Condition by Diagnosis Code'
               new_data[['inclusion']][[n_inclu]][["mapped_templates"]][[j]][['Diagnosis Code is']] <- input[[paste("diag_is_", idx_temp)]]
-              new_data[['inclusion']][[n_inclu]][["mapped_templates"]][[j]][['Diagnosis Codes starts with']] <- input[[paste("diag_like_", idx_temp)]]
+              new_data[['inclusion']][[n_inclu]][["mapped_templates"]][[j]][['Diagnosis Code starts with']] <- input[[paste("diag_like_", idx_temp)]]
               new_data[['inclusion']][[n_inclu]][["mapped_templates"]][[j]][['Diagnosis Description contains']] <- input[[paste("diag_desc_", idx_temp)]]
               new_data[['inclusion']][[n_inclu]][["mapped_templates"]][[j]][['Time Period within']] <- input[[paste("diag_date_", idx_temp)]]
               
@@ -733,17 +739,17 @@ server <- function(input, output, session) {
                 new_data[["inclusion"]][[n_inclu]][["mapped_templates"]][[j]][["Encounter based"]] <- '0'
               }
             } else if (temp == 'Order'){
-              new_data[['exclusion']][[n_inclu]][["mapped_templates"]][[j]][["template"]] <- "Order"
-              new_data[['exclusion']][[n_inclu]][["mapped_templates"]][[j]][['Procedure Name contains']] <- input[[paste('order_name_', idx_temp)]]
-              new_data[['exclusion']][[n_inclu]][["mapped_templates"]][[j]][['Time Period within']] <- input[[paste('order_name_', idx_temp)]]
+              new_data[['inclusion']][[n_inclu]][["mapped_templates"]][[j]][["template"]] <- "Order"
+              new_data[['inclusion']][[n_inclu]][["mapped_templates"]][[j]][['Procedure Name contains']] <- input[[paste('order_name_', idx_temp)]]
+              new_data[['inclusion']][[n_inclu]][["mapped_templates"]][[j]][['Time Period within']] <- input[[paste('order_name_', idx_temp)]]
               if (length(input[[paste("order_base_", idx_temp)]]) == 0){
-                new_data[["exclusion"]][[n_inclu]][["mapped_templates"]][[j]][["Encounter based"]] <- ''
+                new_data[["inclusion"]][[n_inclu]][["mapped_templates"]][[j]][["Encounter based"]] <- ''
               } else if (input[[paste("order_base_", idx_temp)]] == "NULL"){
-                new_data[["exclusion"]][[n_inclu]][["mapped_templates"]][[j]][["Encounter based"]] <- ''
+                new_data[["inclusion"]][[n_inclu]][["mapped_templates"]][[j]][["Encounter based"]] <- ''
               } else if (input[[paste("order_base_", idx_temp)]] == "True"){
-                new_data[["exclusion"]][[n_inclu]][["mapped_templates"]][[j]][["Encounter based"]] <- '1'
+                new_data[["inclusion"]][[n_inclu]][["mapped_templates"]][[j]][["Encounter based"]] <- '1'
               } else if (input[[paste("order_base_", idx_temp)]] == "False"){
-                new_data[["exclusion"]][[n_inclu]][["mapped_templates"]][[j]][["Encounter based"]] <- '0'
+                new_data[["inclusion"]][[n_inclu]][["mapped_templates"]][[j]][["Encounter based"]] <- '0'
               }
             }
           }
@@ -755,19 +761,24 @@ server <- function(input, output, session) {
         else {
           n_exclu <- n_exclu + 1
           new_data[['exclusion']][[n_exclu]] <- list()
-          new_data[['inclusion']][[n_inclu]][["mapped_templates"]] <- list()
+          new_data[['exclusion']][[n_exclu]][["mapped_templates"]] <- list()
           new_data[['exclusion']][[n_exclu]][['internal_logic']] <- input[[paste('add_logic', i)]]
+          new_data[['exclusion']][[n_exclu]][['interval']] <- input[[paste('add_interval', i)]]
+          new_data[['exclusion']][[n_exclu]][['text']] <- input[[paste('add_text',i)]]
+          
           for (j in c(1:length(temp_lst))){
             temp <- temp_lst[[j]]
-            new_data[['inclusion']][[n_inclu]][["mapped_templates"]][[j]] <- list()
-            new_data[['inclusion']][[n_inclu]][["mapped_templates"]][[j]][['template']]
+            new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]] <- list()
+            new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['template']]
             idx_temp <- paste("add_", clu, i, j)
+            print(idx_temp)
             if (temp == 'Diagnosis'){
-              new_data[['inclusion']][[n_inclu]][["mapped_templates"]][[j]][['template']] <- 'Condition by diagnosis codes'
+              new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['template']] <- 'Condition by Diagnosis Code'
               new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Diagnosis Code is']] <- input[[paste("diag_is_", idx_temp)]]
-              new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Diagnosis Codes starts with']] <- input[[paste("diag_like_", idx_temp)]]
+              new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Diagnosis Code starts with']] <- input[[paste("diag_like_", idx_temp)]]
               new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Diagnosis Description contains']] <- input[[paste("diag_desc_", idx_temp)]]
               new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Time Period within']] <- input[[paste("diag_date_", idx_temp)]]
+              
               
               if (length(input[[paste("diag_grp_", idx_temp)]]) == 0){
                 new_data[["exclusion"]][[n_exclu]][["mapped_templates"]][[j]][["Search by diagnosis group"]] <- ''
@@ -779,17 +790,18 @@ server <- function(input, output, session) {
                 new_data[["exclusion"]][[n_exclu]][["mapped_templates"]][[j]][["Search by diagnosis group"]] <- '0'
               }
               
+              print(length(input[[paste("diag_base_", idx_temp)]]) == 0)
               if (length(input[[paste("diag_base_", idx_temp)]]) == 0){
                 new_data[["exclusion"]][[n_exclu]][["mapped_templates"]][[j]][["Encounter based"]] <- ''
-              } else if (input[[paste("diag_base")]] == 'NULL'){
+              } else if (input[[paste("diag_base_", idx_temp)]] == 'NULL'){
                 new_data[["exclusion"]][[n_exclu]][["mapped_templates"]][[j]][["Encounter based"]] <- ''
               } else if (input[[paste("diag_base_", idx_temp)]] == "True"){
                 new_data[["exclusion"]][[n_exclu]][["mapped_templates"]][[j]][["Encounter based"]] <- '1'
               } else if (input[[paste("diag_base_", idx_temp)]] == "False"){
                 new_data[["exclusion"]][[n_exclu]][["mapped_templates"]][[j]][["Encounter based"]] <- '0'
               }
-            } else if (temp == 'Demographics'){
-              new_data[['inclusion']][[n_inclu]][["mapped_templates"]][[j]][['template']] <- 'Demographic'
+            } else if (temp == 'Demographic'){
+              new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['template']] <- 'Demographic'
               gdr <- input[[paste("gender_is_", idx_temp)]]
               race <- input[[paste("race_is_", idx_temp)]]
               eth <- input[[paste("ethic_grp_", idx_temp)]]
@@ -812,7 +824,7 @@ server <- function(input, output, session) {
               }
               
               if (length(eth) == 0){
-                new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][[' is']] <- ''
+                new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Ethnic_Group is']] <- ''
               } else if (eth == 'None'){
                 new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Ethnic_Group is']] <- ''
               } else {
@@ -822,11 +834,10 @@ server <- function(input, output, session) {
               new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Age from ( include )']] <- age_from
               new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Age to ( include )']] <- age_to
             } else if (temp == 'Drug') {
-              new_data[['inclusion']][[n_inclu]][["mapped_templates"]][[j]][['template']] <- 'Prescription'
+              new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['template']] <- 'Prescription'
               drug_desc <- input[[paste('drug_desc_', idx_temp)]]
               drug_time <- input[[paste('drug_time_', idx_temp)]]
               encounter <- input[[paste('drug_enc_', idx_temp)]]
-              new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Drug Description contains']] <- drug_desc
               new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Drug Description contains']] <- drug_desc
               
               if (length(input[[paste("drug_base_", idx_temp)]]) == 0){
@@ -838,13 +849,13 @@ server <- function(input, output, session) {
               } else if (input[[paste("drug_base_", idx_temp)]] == "False"){
                 new_data[["exclusion"]][[n_exclu]][["mapped_templates"]][[j]][["Encounter based"]] <- '0'
               }
-            } else if (temp =='Event'){
-              new_data[['inclusion']][[n_inclu]][["mapped_templates"]][[j]][['template']] <- 'Event'
+            } else if (temp =='Event 1'|temp == 'Event 2' | temp == 'Event 3'){
+              new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['template']] <- 'Event'
               new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Event Name contains']] <- input[[paste('event_name_', idx_temp)]]
-              new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Value from (include)']] <- input[[paste('event_val_formi_', idx_temp)]]
-              new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Value from (not include)']] <- input[[paste('event_val_fromn_', idx_temp)]]
-              new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Value to (include)']] <- input[[paste('event_val_toi_', idx_temp)]]
-              new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Value to (not include)']] <- input[[paste('event_val_ton_', idx_temp)]]
+              new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Value from ( include )']] <- input[[paste('event_val_formi_', idx_temp)]]
+              new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Value from ( not include )']] <- input[[paste('event_val_fromn_', idx_temp)]]
+              new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Value to ( include )']] <- input[[paste('event_val_toi_', idx_temp)]]
+              new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Value to ( not include )']] <- input[[paste('event_val_ton_', idx_temp)]]
               new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Time Period within']] <- input[[paste('event_time_', idx_temp)]]
               
               if (length(input[[paste("event_base_", idx_temp)]]) == 0){
@@ -856,8 +867,8 @@ server <- function(input, output, session) {
               } else if (input[[paste("event_base_", idx_temp)]] == "False"){
                 new_data[["exclusion"]][[n_exclu]][["mapped_templates"]][[j]][["Encounter based"]] <- '0'
               }
-            } else if (temp == 'Lab'){
-              new_data[['inclusion']][[n_inclu]][["mapped_templates"]][[j]][['template']] <- 'Lab'
+            } else if (temp == 'Lab 1' | temp == 'Lab 2' | temp == 'Lab 3'){
+              new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['template']] <- 'Lab'
               new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Lab Name contains']] <- input[[paste('lab_name_', idx_temp)]]
               new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['LOINC is']] <- input[[paste('lab_code_', idx_temp)]]
               new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Value from (include)']] <- input[[paste('lab_val_formi_', idx_temp)]]
@@ -875,7 +886,7 @@ server <- function(input, output, session) {
                 new_data[["exclusion"]][[n_exclu]][["mapped_templates"]][[j]][["Encounter based"]] <- '0'
               }
             } else if (temp == 'Order'){
-              new_data[['inclusion']][[n_inclu]][["mapped_templates"]][[j]][['template']] <- 'Order'
+              new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['template']] <- 'Order'
               new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Procedure Name contains']] <- input[[paste('order_name_', idx_temp)]]
               new_data[['exclusion']][[n_exclu]][["mapped_templates"]][[j]][['Time Period within']] <- input[[paste('order_name_', idx_temp)]]
               if (length(input[[paste("order_base_", idx_temp)]]) == 0){
@@ -897,26 +908,22 @@ server <- function(input, output, session) {
     new_data
   })
   
-  
   # Add criteria ------------------------------------------------------------
-  
-  ## Template selection
+  ## Template selection 
   
   add_template_select <- eventReactive(input$addCri, {
-    addnumber <- input$addCriNum
+    addnumber <- strtoi(input$addCriNum)
     add_template_select <- tagList()
+    
     for (i in c(1:addnumber)){
       add_template_select <- tagAppendChild(add_template_select, h3(paste("Criteria ", i)))
-      add_template_select <- tagAppendChild(add_template_select, pickerInput(inputId = paste("clu", i), choices = c("inclu", "exclu")))
-      add_template_select <- tagAppendChild(add_template_select, pickerInput(inputId = paste("add_logic", i), choices = c("AND", "OR")))
+      add_template_select <- tagAppendChild(add_template_select, pickerInput(inputId = paste("clu", i), choices = c("Inclusion", "Exclusion")))
       add_template_select <- tagAppendChild(add_template_select,       
                                             multiInput(inputId = paste('criTemp', i), 
                                                        label = "Pick the templates",
-                                                       choices=c("Demographics", "Diagnosis", "Lab", "Event", "Drug", "Procedure"),
-                                                       choiceNames=c("Demographics", "Diagnosis", "Lab", "Event", "Drug", "Procedure")))
-      
-      
+                                                       choices = c('Demographic', 'Diagnosis', 'Prescription', 'Event 1', 'Event 2', 'Event 3', 'Lab 1', 'Lab 2', 'Lab 3', 'Order')))
     }
+    
     add_template_select <- tagAppendChild(add_template_select, actionButton(inputId = "Add",label = "Generate criteria",
                                                                             style = "color: #FFF8DC; background-color: #2F4F4F; border-color: #fff;padding: 5px 14px 5px 14px;margin: 5px 5px 5px 5px; "))
     add_template_select
@@ -924,7 +931,7 @@ server <- function(input, output, session) {
   
   output$add_template_select <- renderUI(add_template_select())
   
-  ## Update idx -------
+  # Update idx -------
   add_cri <- eventReactive(input$Add,{
     add_cri <- tagList()
     add_cri <- tagAppendChild(add_cri, hr())
@@ -933,16 +940,18 @@ server <- function(input, output, session) {
     
     for (i in c(1 : addnumber)){
       clu <- input[[paste("clu", i)]]
-      if (clu == 'inclu'){
+      if (clu == 'Inclusion'){
         add_cri <- tagAppendChild(add_cri, h3("Inclusion","Criteria", i))
       } else {
         add_cri <- tagAppendChild(add_cri, h3("Exclusion", "Criteria", i))
       }
-      
+      add_cri <- tagAppendChild(add_cri, textInput(inputId = paste("add_text", i),label = "Criteria description", value = ''))
       temp_lst <- input[[paste("criTemp", i)]]
-      
+      add_cri <- tagAppendChild(add_cri, pickerInput(inputId = paste("add_logic", i), choices = c("AND", "OR", "BEFORE", "AFTER")))
+      add_cri <- tagAppendChild(add_cri, textInput(inputId = paste('add_interval', i), label='Time interval before or after:'))
       for (j in c(1:length(temp_lst))){
         idx_temp <- paste("add_", clu, i, j)
+        print(idx_temp)
         temptemp <- add_template(temp_lst[j], idx_temp)
         add_cri_temp[[j]] <- temptemp
       }
@@ -984,42 +993,202 @@ server <- function(input, output, session) {
     n_inclu <- length(inclu)
     n_exclu <- length(exclu)
     n <- n_inclu + n_exclu
+    print(n)
+    print(n_exclu)
     accumulate <- list()
     current <- list()
-    diagram <- "graph TB\n"
-    for (i in c(1 : (n-1))){
-      if (i <= n_inclu){
+    diagram <- "graph TB\n subgraph Inclusion criteria\n"
+    if (n_exclu > 1){
+      for (i in c(1 : (n-1))){
+        if (i <= n_inclu){
+          cri_text <- inclu[[i]][['text']]
+          cri_text <- gsub("\\(|\\)", "", cri_text)
+          if (i == n_inclu){
+            diagram <- paste0(diagram, 'end\n')
+            diagram <- paste0(diagram, 'subgraph Exclusion criteria\n')
+          }
+          diagram <- paste0(diagram, "id",i,"(Inclusion Criteria ", i, ": ", br(), cri_text, br(), "Patients meet this criteria:", inclu[[i]]$criteria_patients, ", ", 
+                            "Patients meet all previous criteria:", inclu[[i]]$accumulated_patients,")-->",
+                            "id", i+1, "\n")
+        } else if (i != n-1) {
+          j <- i - n_inclu
+          cri_text <- exclu[[j]][['text']]
+          cri_text <- gsub("\\(|\\)", "", cri_text)
+          diagram <- paste0(diagram, "id", i,"(Exclusion Criteria ", j, ": ", br(), cri_text, br(), "Patients meet this criteria:", exclu[[j]]$criteria_patients, ", ", 
+                            "Patients meet all previous criteria:", exclu[[j]]$accumulated_patients,")-->",
+                            "id", i+1, "\n")
+        } else {
+          j <- n - n_inclu - 1
+          cri_text <- exclu[[j]][['text']]
+          cri_text <- gsub("\\(|\\)", "", cri_text)
+          cri_text1 <- exclu[[j+1]][['text']]
+          cri_text1 <- gsub("\\(|\\)", "", cri_text1)
+          diagram <- paste0(diagram, "id", i,"(Exclusion Criteria ", j, ": ",  br(), cri_text, br(),"Patients meet this criteria:", exclu[[j]]$criteria_patients, ", ", 
+                            "Patients meet all previous criteria:", exclu[[j]]$accumulated_patients,")-->",
+                            "id", i+1, "(Exclusion Criteria ", j+1, ": ", br(), cri_text1, br(), "Patients meet this criteria:", exclu[[j+1]]$criteria_patients, ", ", 
+                            "Patients meet all previous criteria:", exclu[[j+1]]$accumulated_patients, ")","\n",'end')
+        }
+      }
+    } else if (n_exclu == 1){
+      for (i in c(1 : (n-1))){
         cri_text <- inclu[[i]][['text']]
         cri_text <- gsub("\\(|\\)", "", cri_text)
-        diagram <- paste0(diagram, "id",i,"(Inclusion Criteria ", i, ": ", br(), cri_text, br(), "Criteria patients:", inclu[[i]]$criteria_patients, ", ", 
-                          "Accumulate patients:", inclu[[i]]$accumulated_patients,")-->",
+        if (i == n-1){
+          diagram <- paste0(diagram, 'end\n')
+        }
+        diagram <- paste0(diagram, "id",i,"(Inclusion Criteria ", i, ": ", br(), cri_text, br(), "Patients meet this criteria:", inclu[[i]]$criteria_patients, ", ", 
+                          "Patients meet all previous criteria:", inclu[[i]]$accumulated_patients,")-->",
                           "id", i+1, "\n")
-      } else if (i != n-1) {
-        j <- i - n_inclu
-        cri_text <- exclu[[j]][['text']]
-        cri_text <- gsub("\\(|\\)", "", cri_text)
-        diagram <- paste0(diagram, "id", i,"(Exclusion Criteria ", j, ": ", br(), cri_text, br(), "Criteria patients:", exclu[[j]]$criteria_patients, ", ", 
-                          "Accumulated patients:", exclu[[j]]$accumulated_patients,")-->",
-                          "id", i+1, "\n")
-      } else {
-        j <- n - n_inclu - 1
-        cri_text <- exclu[[j]][['text']]
-        cri_text <- gsub("\\(|\\)", "", cri_text)
-        cri_text <- exclu[[j+1]][['text']]
-        cri_text <- gsub("\\(|\\)", "", cri_text)
-        diagram <- paste0(diagram, "id", i,"(Exclusion Criteria ", j, ": ",  br(), cri_text, br(),"Criteria patients:", exclu[[j]]$criteria_patients, ", ", 
-                          "Accumulated patients:", exclu[[j]]$accumulated_patients,")-->",
-                          "id", i+1, "(Exclusion Criteria ", j+1, ": ", br(), cri_text, br(), "Criteria patients:", exclu[[j]]$criteria_patients, ", ", 
-                          "Accumulated patients:", exclu[[j]]$accumulated_patients, ")","\n")
+      } 
+      
+      cri_text <- exclu[[1]][['text']]
+      cri_text <- gsub("\\(|\\)", "", cri_text)
+      print(n)
+      diagram <- paste0(diagram, "id", n,"(Exclusion Criteria ", 1, ": ",  br(), cri_text, br(),"Patients meet this criteria:",exclu[[1]]$criteria_patients, ", ", 
+                        "Patients meet all previous criteria:", exclu[[1]]$accumulated_patients,")\n")
+      
+      
+    } else {
+      for (i in c(1 : n)){
+        if (i < n){
+          cri_text <- inclu[[i]][['text']]
+          cri_text <- gsub("\\(|\\)", "", cri_text)
+          diagram <- paste0(diagram, "id",i,"(Inclusion Criteria ", i, ": ", br(), cri_text, br(), "Patients meet this criteria:", inclu[[i]]$criteria_patients, ", ", 
+                            "Patients meet all previous criteria:", inclu[[i]]$accumulated_patients,")-->",
+                            "id", i+1, "\n")
+        } else {
+          cri_text <- inclu[[n]][['text']]
+          cri_text <- gsub("\\(|\\)", "", cri_text)
+          diagram <- paste0(diagram, "id", n,"(Inclusion Criteria ", n, ": ",  br(), cri_text, br(),"Patients meet this criteria:", inclu[[n]]$criteria_patients, ", ", 
+                            "Patients meet all previous criteria:", inclu[[n]]$accumulated_patients,")\n",'end')
+        }
       }
     }
     mermaid(diagram)
   })
   
   
-  output$res_db <- renderPrint({
+  master <- reactive({
+    pat <- js_res()[['result_set']]
+    master <- data.frame(matrix(unlist(pat), nrow=length(pat), byrow=TRUE))
+    colnames(master) <- c('patid', 'age', 'gender', 'race', 'postcode', 'Ethnic Group')
+    master
+  })
+  
+  output$masterTable <- renderDataTable({
+    master()
+  })
+  
+  output$ageDist <- renderPlot({
+    ggplot(master(), aes(x=age)) + geom_histogram(stat = 'count')
+  })
+  
+  output$demoTable <- DT::renderDataTable({
+    pat <- master()
+    # row 1
+    n11 <- length(which(pat$`Ethnic Group`=='Hispanic' & pat$gender == 'Female' & pat$race == 'White/Caucasian'))
+    n12 <- length(which(pat$`Ethnic Group`=='Hispanic' & pat$gender == 'Male' & pat$race == 'White/Caucasian'))
+    n13 <- length(which(pat$`Ethnic Group`=='Hispanic' & pat$gender != 'Female' & pat$gender != 'Male' & pat$race == 'White/Caucasian'))
+    n14 <- length(which(pat$`Ethnic Group`=='Non-Hispanic' & pat$gender == 'Female' & pat$race == 'White/Caucasian'))
+    n15 <- length(which(pat$`Ethnic Group`=='Non-Hispanic' & pat$gender == 'Male' & pat$race == 'White/Caucasian'))
+    n16 <- length(which(pat$`Ethnic Group`=='Non-Hispanic' & pat$gender != 'Female' & pat$gender != 'Male' & pat$race == 'White/Caucasian'))
+    n17 <- length(which(pat$`Ethnic Group`!='Hispanic' & pat$`Ethnic Group`!='Non-Hispanic' & pat$gender == 'Female' & pat$race == 'White/Caucasian'))
+    n18 <- length(which(pat$`Ethnic Group`!='Hispanic' & pat$`Ethnic Group`!='Non-Hispanic' & pat$gender == 'Male' & pat$race == 'White/Caucasian'))
+    n19 <- length(which(pat$`Ethnic Group`!='Hispanic' & pat$`Ethnic Group`!='Non-Hispanic' & pat$gender != 'Female' & pat$gender != 'Male' & pat$race == 'White/Caucasian'))
     
-    js_res()
+    # row 2
+    n21 <- length(which(pat$`Ethnic Group`=='Hispanic' & pat$gender == 'Female' & pat$race == 'African American'))
+    n22 <- length(which(pat$`Ethnic Group`=='Hispanic' & pat$gender == 'Male' & pat$race == 'African American'))
+    n23 <- length(which(pat$`Ethnic Group`=='Hispanic' & pat$gender != 'Female' & pat$gender != 'Male' & pat$race == 'African American'))
+    n24 <- length(which(pat$`Ethnic Group`=='Non-Hispanic' & pat$gender == 'Female' & pat$race == 'African American'))
+    n25 <- length(which(pat$`Ethnic Group`=='Non-Hispanic' & pat$gender == 'Male' & pat$race == 'African American'))
+    n26 <- length(which(pat$`Ethnic Group`=='Non-Hispanic' & pat$gender != 'Female' & pat$gender != 'Male' & pat$race == 'African American'))
+    n27 <- length(which(pat$`Ethnic Group`!='Hispanic' & pat$`Ethnic Group`!='Non-Hispanic' & pat$gender == 'Female' & pat$race == 'African American'))
+    n28 <- length(which(pat$`Ethnic Group`!='Hispanic' & pat$`Ethnic Group`!='Non-Hispanic' & pat$gender == 'Male' & pat$race == 'African American'))
+    n29 <- length(which(pat$`Ethnic Group`!='Hispanic' & pat$`Ethnic Group`!='Non-Hispanic' & pat$gender != 'Female' & pat$gender != 'Male' & pat$race == 'African American'))
+    
+    # row 3
+    n31 <- length(which(pat$`Ethnic Group`=='Hispanic' & pat$gender == 'Female' & pat$race == 'Asian'))
+    n32 <- length(which(pat$`Ethnic Group`=='Hispanic' & pat$gender == 'Male' & pat$race == 'Asian'))
+    n33 <- length(which(pat$`Ethnic Group`=='Hispanic' & pat$gender != 'Female' & pat$gender != 'Male' & pat$race == 'Asian'))
+    n34 <- length(which(pat$`Ethnic Group`=='Non-Hispanic' & pat$gender == 'Female' & pat$race == 'Asian'))
+    n35 <- length(which(pat$`Ethnic Group`=='Non-Hispanic' & pat$gender == 'Male' & pat$race == 'Asian'))
+    n36 <- length(which(pat$`Ethnic Group`=='Non-Hispanic' & pat$gender != 'Female' & pat$gender != 'Male' & pat$race == 'Asian'))
+    n37 <- length(which(pat$`Ethnic Group`!='Hispanic' & pat$`Ethnic Group`!='Non-Hispanic' & pat$gender == 'Female' & pat$race == 'Asian'))
+    n38 <- length(which(pat$`Ethnic Group`!='Hispanic' & pat$`Ethnic Group`!='Non-Hispanic' & pat$gender == 'Male' & pat$race == 'Asian'))
+    n39 <- length(which(pat$`Ethnic Group`!='Hispanic' & pat$`Ethnic Group`!='Non-Hispanic' & pat$gender != 'Female' & pat$gender != 'Male' & pat$race == 'Asian'))
+    
+    # row 4
+    n41 <- length(which(pat$`Ethnic Group`=='Hispanic' & pat$gender == 'Female' & pat$race == 'Other'))
+    n42 <- length(which(pat$`Ethnic Group`=='Hispanic' & pat$gender == 'Male' & pat$race == 'Other'))
+    n43 <- length(which(pat$`Ethnic Group`=='Hispanic' & pat$gender != 'Female' & pat$gender != 'Male' & pat$race == 'Other'))
+    n44 <- length(which(pat$`Ethnic Group`=='Non-Hispanic' & pat$gender == 'Female' & pat$race == 'Other'))
+    n45 <- length(which(pat$`Ethnic Group`=='Non-Hispanic' & pat$gender == 'Male' & pat$race == 'Other'))
+    n46 <- length(which(pat$`Ethnic Group`=='Non-Hispanic' & pat$gender != 'Female' & pat$gender != 'Male' & pat$race == 'Other'))
+    n47 <- length(which(pat$`Ethnic Group`!='Hispanic' & pat$`Ethnic Group`!='Non-Hispanic' & pat$gender == 'Female' & pat$race == 'Other'))
+    n48 <- length(which(pat$`Ethnic Group`!='Hispanic' & pat$`Ethnic Group`!='Non-Hispanic' & pat$gender == 'Male' & pat$race == 'Other'))
+    n49 <- length(which(pat$`Ethnic Group`!='Hispanic' & pat$`Ethnic Group`!='Non-Hispanic' & pat$gender != 'Female' & pat$gender != 'Male' & pat$race == 'Other'))
+    
+    # row 5
+    n51 <- length(which(pat$`Ethnic Group`=='Hispanic' & pat$gender == 'Female' & pat$race == 'Unknown'))
+    n52 <- length(which(pat$`Ethnic Group`=='Hispanic' & pat$gender == 'Male' & pat$race == 'Uknown'))
+    n53 <- length(which(pat$`Ethnic Group`=='Hispanic' & pat$gender != 'Female' & pat$gender != 'Male' & pat$race == 'Unknown'))
+    n54 <- length(which(pat$`Ethnic Group`=='Non-Hispanic' & pat$gender == 'Female' & pat$race == 'Unknown'))
+    n55 <- length(which(pat$`Ethnic Group`=='Non-Hispanic' & pat$gender == 'Male' & pat$race == 'Unknown'))
+    n56 <- length(which(pat$`Ethnic Group`=='Non-Hispanic' & pat$gender != 'Female' & pat$gender != 'Male' & pat$race == 'Unknown'))
+    n57 <- length(which(pat$`Ethnic Group`!='Hispanic' & pat$`Ethnic Group`!='Non-Hispanic' & pat$gender == 'Female' & pat$race == 'Unknown'))
+    n58 <- length(which(pat$`Ethnic Group`!='Hispanic' & pat$`Ethnic Group`!='Non-Hispanic' & pat$gender == 'Male' & pat$race == 'Unknown'))
+    n59 <- length(which(pat$`Ethnic Group`!='Hispanic' & pat$`Ethnic Group`!='Non-Hispanic' & pat$gender != 'Female' & pat$gender != 'Male' & pat$race == 'Unknown'))
+    
+    summaryT <- data.frame('Hispanic' = c(n11, n21, n31, n41, n51), 'Non-Hispanic' = c(n12, n22, n32, n42, n52), 'Other' = c(n13, n23, n33, n43, n53),
+                           'Hispanic1' = c(n14, n24, n34, n44, n54), 'Non-Hispanic1' = c(n15, n25, n35, n45, n55), 'Other1' = c(n16, n26, n36, n46, n56),
+                           'Hispanic2' = c(n17, n27, n37, n47, n57), 'Non-Hispanic2' = c(n18, n28, n38, n48, n58), 'Other2' = c(n19, n29, n39, n49, n59))
+    rownames(summaryT) <- c('White/Caucasian', 'African American', 'Asian', 'Other', 'Unknown')
+    colnames(summaryT) <- c('Female', 'Male', 'Unknown','Female', 'Male', 'Unknown','Female', 'Male', 'Unknown')
+    
+    
+    summaryContainer <- htmltools::withTags(table(
+      class = 'display',
+      thead(
+        tr(
+          th(),
+          th(colspan = 3, 'Hispanic', class = "dt-center"),
+          th(colspan = 3, 'Non-Hispanic', class = "dt-center"),
+          th(colspan = 3, 'Other', class = "dt-center")
+        ),
+        tr(
+          th(),
+          lapply(names(summaryT), th)
+        )
+      )
+    ))
+    
+    DT::datatable(summaryT, container = summaryContainer,extensions = "Buttons", options = list(
+      paging = TRUE,
+      searching = TRUE,
+      fixedColumns = TRUE,
+      autoWidth = TRUE,
+      ordering = TRUE,
+      dom = 'tB',
+      buttons = c('copy', 'csv', 'excel')
+    ))
+    
+  })
+  
+  output$reminder <- renderText({
+    res <- js_res()
+    inclu <- res[['inclusion']]
+    exclu <- res[['exclusion']]
+    n_inclu <- length(inclu)
+    n_exclu <- length(exclu)
+    n <- n_inclu + n_exclu
+    
+    cri_lst <- c()
+    for (i in c(1:n_inclu)){
+      if (inclu[[i]] == 'NA'){
+        cri_lst <- append()
+      }
+    }
   })
   
   

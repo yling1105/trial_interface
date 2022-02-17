@@ -8,6 +8,8 @@ library(reticulate)
 library(DiagrammeR)
 library(shinyjs)
 library(shinyBS)
+library(ggplot2)
+library(DT)
 
 add_inclu_idx <- 1
 add_exclu_idx <- 1
@@ -39,6 +41,7 @@ initial <- function(lst){
           initial_val[[temp]][['Diagnosis Code is']] <- lst[[i]][['Diagnosis Code is']]
           initial_val[[temp]][['Diagnosis Code starts with']] <- lst[[i]][['Diagnosis Code starts with']]
           initial_val[[temp]][['Diagnosis Description contains']] <- lst[[i]][['Diagnosis Description contains']]
+          #initial_val[[temp]]
           initial_val[[temp]][['Time Period within']] <- lst[[i]][['Time Period within']]
           initial_val[[temp]][['Search by diagnosis group']] <- lst[[i]][['Search by diagnosis group']]
           initial_val[[temp]][['Encounters']] <- lst[[i]][['Encounters']]
@@ -60,7 +63,7 @@ initial <- function(lst){
           temp <- paste("Lab", idx_lab)
           idx_lab <- idx_lab + 1
           initial_val[[temp]][['Lab Name contains']] <- lst[[i]][['Lab Name contains']]
-          initial_val[[temp]][['Loinc Code']] <- lst[[i]][['LOINC is']]
+          initial_val[[temp]][['LOINC is']] <- lst[[i]][['LOINC is']]
           initial_val[[temp]][['Value from ( include )']] <- lst[[i]][['Value from ( include )']]
           initial_val[[temp]][['Value from ( not include )']] <- lst[[i]][['Value from ( not include )']]
           initial_val[[temp]][['Value to ( include )']] <- lst[[i]][['Value to ( include )']]
@@ -76,7 +79,6 @@ initial <- function(lst){
         }
       }
     }
-    #print(initial_val)
     return(initial_val)
   } else {
     return(initial_val)
@@ -106,7 +108,11 @@ template_map <- function(temp, temp_dict, idx_temp){
       return(
         div(
           h3("------- Diagnosis template -------"),
-          textInput(inputId = paste("diag_is_", idx_temp),label = "Diagnosis Code is:", value = temp_dict[[temp]][['Diagnosis Code is']]),
+          fluidRow(
+            column(width = 3, textInput(inputId = paste("diag_is_", idx_temp),label = "Diagnosis Code(Group) is:", value = temp_dict[[temp]][['Diagnosis Code is']])),
+            column(width = 3, "Group codes can be found at: https://www.icd10data.com/ICD10CM/DRG")
+          ),
+          
           textInput(inputId = paste("diag_like_", idx_temp), label = "Diagnosis Code starts with:", value = temp_dict[[temp]][["Diagnosis Code starts with"]]),
           textInput(inputId = paste("diag_desc_", idx_temp), label = "Diagnosis Description contains", value = temp_dict[[temp]][["Diagnosis Description contains"]]),
           textInput(inputId = paste("diag_date_", idx_temp), label = "Diagnosis date within:", value = temp_dict[[temp]][['Time Period within']]),
@@ -151,8 +157,16 @@ template_map <- function(temp, temp_dict, idx_temp){
     
   } else if(temp == 'Demographic'){
     if (temp %in% names(temp_dict)){
-      if ('Gender is' %in% names(temp_dict[[temp]])){
-        gr <- temp_dict[[temp]][['Gender is']]
+      
+      print('########!!!!!!!!!')
+      print(temp_dict[[temp]])
+      if (!(is.null(temp_dict[[temp]][['Gender is']]))){
+        if (temp_dict[[temp]][['Gender is']] != ""){
+          gr <- temp_dict[[temp]][['Gender is']]
+        }
+        else{
+          gr <- 'None'
+        }
       } else {
         gr <- 'None'
       }
@@ -173,7 +187,7 @@ template_map <- function(temp, temp_dict, idx_temp){
           awesomeCheckboxGroup(
             inputId = paste('race_is_', idx_temp),
             label = "Race", 
-            choices = c("Afriacn American", "Asian", "White", "Caucasian"),
+            choices = c("African American", "Asian", "White", "Caucasian"),
             selected = temp_dict[[temp]][['Race is']],
             inline = TRUE, 
             status = "danger"
@@ -399,7 +413,7 @@ add_template <- function(temp, idx_temp){
       div(
         h3("------- Diagnosis template -------"),
         textInput(inputId = paste("diag_is_", idx_temp),label = "Diagnosis Code is:", value = ''),
-        textInput(inputId = paste("diag_like_", idx_temp), label = "Diagnosis Code start with:", value = ''),
+        textInput(inputId = paste("diag_like_", idx_temp), label = "Diagnosis Code starts with:", value = ''),
         textInput(inputId = paste("diag_desc_", idx_temp), label = "Diagnosis Description contains", value = ''),
         textInput(inputId = paste("diag_date_", idx_temp), label = "Diagnosis date within:", value = ''),
         pickerInput(
@@ -417,7 +431,7 @@ add_template <- function(temp, idx_temp){
         )
       )
     )
-  } else if(temp == 'Demographics'){
+  } else if(temp == 'Demographic'){
     return(
       div(
         h3("------- Demographics template -------"),
@@ -452,7 +466,7 @@ add_template <- function(temp, idx_temp){
         )
       )
     )
-  } else if (temp == 'Event'){
+  } else if (temp == 'Event 1' | temp == 'Event 2' | temp == 'Event 3'){
     return(
       div(
         h3("------- Event template -------"),
@@ -474,7 +488,7 @@ add_template <- function(temp, idx_temp){
         )
       )
     )
-  } else if (temp == 'Lab'){
+  } else if (temp == 'Lab 1' | temp == 'Lab 2' | temp == 'Lab 3'){
     return(
       div(
         h3("------- Lab template -------"),
@@ -497,11 +511,11 @@ add_template <- function(temp, idx_temp){
         )
       )
     )
-  } else if (temp == 'Procedure'){
+  } else if (temp == 'Order'){
     return(
       div(
         h3("------- Order template -------"),
-        textInput(inputId = paste('order_name_', idx_temp), label='Procedure Name contains', value=temp_dict[[]]),
+        textInput(inputId = paste('order_name_', idx_temp), label='Procedure Name contains', value=''),
         textInput(inputId = paste('order_time_', idx_temp), label='Time Period within', value=''),
         pickerInput(
           inputId = paste("order_base_", idx_temp),
@@ -512,10 +526,4 @@ add_template <- function(temp, idx_temp){
       )           
     )
   }
-  
-  
-  
-  
-  
-  
 }

@@ -11,7 +11,7 @@
 # header ------------------------------------------------------------------
 
 header <- dashboardHeader(
-  title = HTML("Trial Emulation"),
+  title = HTML("Cohort identification for trials"),
   dropdownMenu(
     type = 'message',
     messageItem(
@@ -128,9 +128,12 @@ body <- dashboardBody(
     tabItem(tabName = "flow",
             conditionalPanel("input$updateResults%2==1", DiagrammeROutput("cri_flow"))),
     
-    tabItem(tabName = "summary")
-    
-    
+    tabItem(tabName = "summary",
+            conditionalPanel("input$updateResults%2==1", 
+                             plotOutput('ageDist'),
+                             dataTableOutput('demoTable')
+            )
+    )
   )
 )
 
