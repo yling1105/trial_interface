@@ -11,7 +11,7 @@
 # header ------------------------------------------------------------------
 
 header <- dashboardHeader(
-  title = HTML("Trial Emulation"),
+  title = HTML("Cohort identification for trials"),
   dropdownMenu(
     type = 'message',
     messageItem(
@@ -40,7 +40,7 @@ sidebar <- dashboardSidebar(
       buttonLabel = "Browse"
     ),
     
-    actionBttn(inputId = "temp_generate", label = "Generate report",
+    actionBttn(inputId = "temp_generate", label = "Intialize Criteria",
                style = "material-flat", color='primary'),
     
     menuItem("Templates", tabName='temp_page', icon=icon("bars")),
@@ -93,19 +93,21 @@ body <- dashboardBody(
       tabName = 'temp_page',
       fluidRow(
         div(id='demo_intro',
-            infoBox('Demographic', subtitle = "Patients' demographic information", icon = icon("group"), color = "red", width = 4, fill = TRUE)),
+            infoBox('Demographic', subtitle = "Patients' demographic information", icon = icon("group"), color = "red", width = 3, fill = TRUE)),
         div(id='diag_intro',
-            infoBox('Diagnosis', subtitle = "Diagnosis records related information", icon = icon("book"), color = "aqua", width = 4, fill = TRUE)),
+            infoBox('Diagnosis', subtitle = "Diagnosis records related information", icon = icon("book"), color = "aqua", width = 3, fill = TRUE)),
         div(id='drug_intro',
-            infoBox('Prescription', subtitle = "Patients' prescription records", icon = icon("eyedropper"), color = "orange", width = 4, fill = TRUE)),
+            infoBox('Prescription', subtitle = "Patients' prescription records", icon = icon("eyedropper"), color = "orange", width = 3, fill = TRUE)),
+        div(id='event_intro',
+            infoBox('Event', subtitle = "Events patients encountered", icon = icon("newspaper-o"), color = "purple", width = 3, fill = TRUE))
       ),
       fluidRow(
-        div(id='event_intro',
-            infoBox('Event', subtitle = "Events patients encountered", icon = icon("newspaper-o"), color = "purple", width = 4, fill = TRUE)),
         div(id='lab_intro',
-            infoBox('Lab', subtitle = "Ordered lab tests and results of the patient", icon = icon("flask"), color = "blue", width = 4, fill = TRUE)),
+            infoBox('Lab', subtitle = "Ordered lab tests and results of the patient", icon = icon("flask"), color = "blue", width = 3, fill = TRUE)),
         div(id='order',
-            infoBox('Order', subtitle = "Procedures ordered for the patients", icon = icon("heartbeat"), color = "green", width = 4, fill = TRUE))
+            infoBox('Order', subtitle = "Procedures ordered for the patients", icon = icon("heartbeat"), color = "green", width = 3, fill = TRUE)),
+        div(id='encounter_intro',
+            infoBox('Encounter', subtitle = "Patients' admission, discharge and encounter type", icon = icon("tags"), color = "teal", width = 3, fill = TRUE)),
       ),
       conditionalPanel("output.getData == True && input.temp_generate%2 == 1", uiOutput("template_page"))     
     ),
@@ -128,9 +130,12 @@ body <- dashboardBody(
     tabItem(tabName = "flow",
             conditionalPanel("input$updateResults%2==1", DiagrammeROutput("cri_flow"))),
     
-    tabItem(tabName = "summary")
-    
-    
+    tabItem(tabName = "summary",
+            conditionalPanel("input$updateResults%2==1", 
+                             plotOutput('ageDist'),
+                             dataTableOutput('demoTable')
+            )
+    )
   )
 )
 
