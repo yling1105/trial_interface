@@ -14,7 +14,7 @@ library(DT)
 add_inclu_idx <- 1
 add_exclu_idx <- 1
 
-source_python('clinical_trial_py.py')
+#source_python('clinical_trial_py.py')
 lab_name <- read.csv('lab_name.csv')
 event_name <- read.csv('event_name.csv')
 

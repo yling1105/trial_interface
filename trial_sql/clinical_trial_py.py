@@ -8,6 +8,16 @@ import numpy as np
 import pandas as pd
 from sqlalchemy import create_engine
 
+from selenium import webdriver
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import os
+import shutil
+import time
+from webdriver_manager.chrome import ChromeDriverManager   # eruqired in R
+
 
 solid_entities = {'Condition':'Condition by Diagnosis Code',
                   'Measurement':'Lab',
@@ -17,11 +27,11 @@ solid_entities = {'Condition':'Condition by Diagnosis Code',
                   'Procedure':'Order'
                  }
                  
-engine = create_engine()
+engine = create_engine('postgresql+psycopg2://stroke:YI`?vhG7d9@129.106.31.45:15432/covid19')
 
 
 def getConnection():
-    return psycopg2.connect()  
+    return psycopg2.connect("dbname='covid19' user='stroke' password='YI`?vhG7d9' host='129.106.31.45' port='15432' ")  
     raise NotImplementedError
 
 def load_json_py(j_file):
@@ -32,6 +42,59 @@ def load_json_py(j_file):
 	j_str = json.dumps(j_data)
 	
 	return j_str
+
+def get_nct_jstr(nct_id):
+
+    options = webdriver.ChromeOptions()
+    options.add_argument('--headless')
+    options.add_argument('window-size=2000x2000')
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+
+    #driver = webdriver.Chrome(chrome_options=options)               # required in jupyter 
+    driver = webdriver.Chrome(ChromeDriverManager().install(),options=options)  # required in R
+
+    # driver.get("http://www.ohdsi.org/web/criteria2query/")
+    driver.get("http://172.18.0.3:8080/criteria2query")   # container tomcat_luyao on .45
+    
+    #driver.save_screenshot("Website.png")
+
+    #Load clinical trial
+    nctid = driver.find_element_by_id('nctid')
+    fetchct = driver.find_element_by_id('fetchct')
+    nctid.send_keys(nct_id)
+    ActionChains(driver).click(fetchct).perform()
+
+    #Parse the criteria
+    wait = WebDriverWait(driver, 30)
+    
+    parse = wait.until(EC.element_to_be_clickable((By.ID, 'start')))
+    time.sleep(5)
+    #driver.save_screenshot("Website1.png")
+    ActionChains(driver).click(parse).perform()
+
+    time.sleep(30)
+    #driver.save_screenshot("Website2.png")
+        
+    #Extract JSON text
+    download = wait.until(EC.element_to_be_clickable((By.ID, 'downloadfile')))
+    ActionChains(driver).click(download).perform()
+
+    #driver.save_screenshot("Website3.png")
+    
+    time.sleep(30)
+    driver.quit()
+    
+    #Rename the file in the JSON folder
+    if os.path.exists('Criteria2Query.json'):
+        src_file = os.path.realpath('Criteria2Query.json')
+        j_str =  load_json_py(src_file)
+    else:
+        j_str = ''    
+    
+    return j_str
+
+
 	
  
 def get_temporal(display_text, content ):
@@ -152,7 +215,7 @@ def map_clinical_trial_dump(j_str):
                                 mapped_template['template'] = template
                                 mapped_template['Diagnosis Description contains'] = content
                                 mapped_template['Time Period within'] = temporal
-                                mapped_template['Search by diagnpsis group'] = '0'
+                                mapped_template['Search by diagnosis group'] = '0'
 
                             if template == 'Prescription':
                                 mapped_template['template'] = template
@@ -184,9 +247,9 @@ def map_clinical_trial_dump(j_str):
 
                                 if 'hispanic' in content.lower():
                                     mapped_template['Ethnic_Group is'] = content   
-                                mapped_template['Encounter based'] = 1                
+                                mapped_template['Encounter based'] = '0'                
                             else:
-                                 mapped_template['Encounter based'] = 1
+                                 mapped_template['Encounter based'] = '1'
 
                             if template == 'Lab':
                                 mapped_template['template'] = template
@@ -235,6 +298,8 @@ def map_clinical_trial_dump(j_str):
  
  
 def get_data_from_templdate ( mapped_template ):
+    print("$$$$$$$$$$$$",flush=True)
+    print(mapped_template,flush=True)
     template = mapped_template.get('template')
     return_SQL = ''
     try: 
@@ -260,7 +325,7 @@ def get_data_from_templdate ( mapped_template ):
                         mapped_template.get('Diagnosis Code starts with',''),
                         mapped_template.get('Diagnosis Description contains',''),
                         mapped_template.get('Time Period within',''),
-                        mapped_template.get('Search by diagnpsis group',''),
+                        mapped_template.get('Search by diagnosis group',''),
                         mapped_template.get('Encounters','')
                         )                    
                 else:
@@ -270,6 +335,7 @@ def get_data_from_templdate ( mapped_template ):
                         '{}',
                         '{}',
                         '{}',
+                        '{}',                        
                         '{}',
                         '{}',
                         ''
@@ -278,17 +344,18 @@ def get_data_from_templdate ( mapped_template ):
                         mapped_template.get('Diagnosis Code is',''),
                         mapped_template.get('Diagnosis Code starts with',''),
                         mapped_template.get('Diagnosis Description contains',''),
+                        mapped_template.get('Diagnosis Type',''),                        
                         mapped_template.get('Time Period within',''),
-                        mapped_template.get('Search by diagnpsis group',''),
+                        mapped_template.get('Search by diagnosis group',''),
                         mapped_template.get('Encounter based','')
                         )
-                #print(return_SQL)
+                print(return_SQL, flush=True)
 #                sql_conn = getConnection()    
 #                return_data =pd.read_sql(return_SQL,sql_conn)
 #                sql_conn.close()
                 return_data = pd.read_sql_query(return_SQL,con=engine)  
                 
-            print(return_data.shape)
+            print(return_data.shape, flush=True)
  
         if template == 'Demographic':
             if  mapped_template.get('Age from ( include )','') == '' \
@@ -322,7 +389,7 @@ def get_data_from_templdate ( mapped_template ):
             print(return_data.shape)
 
         if template == 'Prescription':
-            if mapped_template.get('Drug description contains','') == '':
+            if mapped_template.get('Drug Description contains','') == '':
                 return_data =pd.DataFrame()
             else:    
                 return_SQL = """
@@ -333,11 +400,11 @@ def get_data_from_templdate ( mapped_template ):
                 ''
                 )
                 """.format(
-                mapped_template.get('Drug description contains',''),
+                mapped_template.get('Drug Description contains',''),
                 mapped_template.get('Time Period within',''),
                 mapped_template.get('Encounter based','')
                 )
-                # print(return_SQL)
+                print(return_SQL)
 #                sql_conn = getConnection()    
                 return_data = pd.read_sql_query(return_SQL,con=engine)
 #                return_data =pd.read_sql(return_SQL,sql_conn)
@@ -348,7 +415,10 @@ def get_data_from_templdate ( mapped_template ):
         if template == 'Event':
             if mapped_template.get('Event Name contains','') == '':
                 return_data =pd.DataFrame()
-            else:    
+            else: 
+                event_names = mapped_template.get('Event Name contains','')
+                if isinstance(event_names, list):
+                  event_names = '|'.join(event_names)              
                 return_SQL = """
                  select *  from stroke.get_patients_by_events (
                 '{}',
@@ -361,7 +431,7 @@ def get_data_from_templdate ( mapped_template ):
                 ''
                 )
                 """.format(
-                mapped_template.get('Event Name contains',''),
+                event_names,
                 mapped_template.get('Value from ( include )',''),
                 mapped_template.get('Value from ( not include )',''),
                 mapped_template.get('Value to ( include )',''),
@@ -369,17 +439,20 @@ def get_data_from_templdate ( mapped_template ):
                 mapped_template.get('Time Period within',''),              
                 mapped_template.get('Encounter based','')
                 )
-                # print(return_SQL)
+                print(return_SQL,flush=True)
 #                sql_conn = getConnection()    
                 return_data = pd.read_sql_query(return_SQL,con=engine)
 #                return_data =pd.read_sql(return_SQL,sql_conn)
 #                sql_conn.close()
-            print(return_data.shape)
+            print(return_data.shape, flush=True)
             
         if template == 'Lab':
             if mapped_template.get('Lab Name contains','') == '':
                 return_data =pd.DataFrame()
-            else:            
+            else: 
+                lab_names = mapped_template.get('Lab Name contains','')
+                if isinstance(lab_names, list):
+                  lab_names = '|'.join(lab_names)
                 return_SQL = """
                  select *  from stroke.get_patients_by_lab (
                 '{}',
@@ -393,7 +466,7 @@ def get_data_from_templdate ( mapped_template ):
                 ''
                 )
                 """.format(
-                mapped_template.get('Lab Name contains',''),
+                lab_names,
                 mapped_template.get('LOINC is',''),                
                 mapped_template.get('Value from ( include )',''),
                 mapped_template.get('Value from ( not include )',''),
@@ -434,8 +507,33 @@ def get_data_from_templdate ( mapped_template ):
 
             print(return_data.shape)
 
+        if template == 'Encounter':
+            if mapped_template.get('Encounter Type','') == '' \
+            and mapped_template.get('Discharge Disposition','') \
+            and mapped_template.get('Admit Type','') :
+                return_data =pd.DataFrame()
+            else:             
+                return_SQL = """
+                select *  from stroke.get_patients_by_encounters (
+                '{}',
+                '{}',
+                '{}',
+                ''
+                )""".format(
+                mapped_template.get('Encounter Type',''),
+                mapped_template.get('Admit Type',''),
+                mapped_template.get('Discharge Disposition','')
+                )
+                print(return_SQL)
+#                sql_conn = getConnection()    
+#                return_data =pd.read_sql(return_SQL,sql_conn)
+#                sql_conn.close()
+                return_data = pd.read_sql_query(return_SQL,con=engine)
+
+            print(return_data.shape)        
             
     except Exception as e:
+        print("SQL Execution Error")
         print(e)
         return_SQL = """
         select person_id,encntr_id   from stroke.stroke_events limit 0
@@ -510,9 +608,40 @@ def get_pat_data(person_ids_str):
 #    sql_conn.commit()
 #    sql_conn.close()
     print(final_pat.shape)
-    return  final_pat.to_dict()
+    return  final_pat.to_dict('index')
 
- 
+def merge_template_by_timing(templdate1,templdate2,sequence,interval):
+    #if  sequence =='Template 2 WITHIN Template 1': 
+    interval1 = pd.to_timedelta(int(interval.split('|')[0].strip().split(' ')[0]), unit=interval.split('|')[0].strip().split(' ')[1])
+    interval2 = pd.to_timedelta(int(interval.split('|')[1].strip().split(' ')[0]), unit=interval.split('|')[1].strip().split(' ')[1])
+    #else:
+    #    interval2 = pd.to_timedelta(int(interval.split('|')[0].strip().split(' ')[0]), unit=interval.split('|')[0].strip().split(' ')[1])
+    #    interval1 = pd.to_timedelta(int(interval.split('|')[1].strip().split(' ')[0]), unit=interval.split('|')[1].strip().split(' ')[1])   
+    
+    print(sequence)
+    print(interval1,interval2)
+        
+    if  sequence =='Template 1 WITHIN Template 2': 
+        templdate_temp = templdate1
+        templdate1 = templdate2
+        templdate2 = templdate_temp
+    print(templdate1.head(1))
+    print(templdate2.head(1))
+    
+    if templdate1['encntr_id'].isna().all() or templdate2['encntr_id'].isna().all() :
+        merged = templdate1.merge(templdate2, how='inner', on= ['person_id'], suffixes=('_1', '_2'))  
+        if templdate1['encntr_id'].isna().all():
+            merged['encntr_id'] = merged['encntr_id_2'] 
+        if templdate2['encntr_id'].isna().all():
+            merged['encntr_id'] = merged['encntr_id_1']             
+    else:    
+        merged = templdate1.merge(templdate2, how='inner', on= ['person_id','encntr_id'], suffixes=('_1', '_2'))  
+    merged = merged[(merged.event_dt_tm_2 <= merged.event_dt_tm_1 +  interval2) & 
+                    (merged.event_dt_tm_2 > merged.event_dt_tm_1 - interval1) ]
+    merged = merged[['person_id','encntr_id']].drop_duplicates().reset_index(drop=True) 
+    print(merged.shape)
+    return merged
+    
  
 
 def refresh_patient_numbers(j_str):
@@ -526,16 +655,32 @@ def refresh_patient_numbers(j_str):
         yc = 0 # this is the first template in a Criteria 
         y_df = pd.DataFrame()
         for y in x.get('mapped_templates'):
+            if 'WITHIN' in x.get('internal_logic'):
+                data_enctr = y.get('Encounter based','')
+                y['Encounter based'] = '1'  
             print(y)
             if yc == 0:  # this is the first template in a Criteria 
                 y_df = get_data_from_templdate (y)
+                if len(y_df.columns) > 0 :
+                    if x.get('internal_logic') in ['AND','OR']:
+                        y_df = y_df[['person_id','encntr_id']].drop_duplicates()
+                    else:
+                        if data_enctr != '1':
+                            y_df['encntr_id'] = None
             else:
                 next_templdate_data = get_data_from_templdate (y)
-                if len(next_templdate_data.columns) > 0:
+                if x.get('internal_logic') in ['AND','OR']:
+                    next_templdate_data = next_templdate_data[['person_id','encntr_id']].drop_duplicates()  
+                  
+                if len(next_templdate_data.columns) > 0: # valid query , otherwise skip the merge
                     if x.get('internal_logic') == 'AND':
                         y_df =  merge_df_and(y_df,next_templdate_data)
-                    else:
+                    if x.get('internal_logic') == 'OR':
                         y_df =  merge_df_or(y_df,next_templdate_data)
+                    if 'WITHIN' in x.get('internal_logic'):
+                        if data_enctr != '1':
+                            next_templdate_data['encntr_id'] = None                      
+                        y_df = merge_template_by_timing(y_df,next_templdate_data,x.get('internal_logic'), x.get('interval'))                           
             yc += 1
         if len(final_df.columns) == 0:    # first Criteria or no valid criteria so far 
             final_df = y_df
@@ -562,16 +707,31 @@ def refresh_patient_numbers(j_str):
         yc = 0 # this is the first template in a Criteria 
         y_df = pd.DataFrame()
         for y in x.get('mapped_templates'):
+            if 'WITHIN' in x.get('internal_logic'):
+                data_enctr = y.get('Encounter based','')
+                y['Encounter based'] = '1'
             print(y)
             if yc == 0:  # this is the first template in a Criteria 
                 y_df = get_data_from_templdate (y)
+                if len(y_df.columns) > 0 :                
+                    if x.get('internal_logic') in ['AND','OR']:
+                        y_df = y_df[['person_id','encntr_id']].drop_duplicates()  
+                    else:
+                        if data_enctr != '1':
+                            y_df['encntr_id'] = None                        
             else:
                 next_templdate_data = get_data_from_templdate (y)
-                if len(next_templdate_data.columns) > 0:
+                if x.get('internal_logic') in ['AND','OR']:
+                    next_templdate_data = next_templdate_data[['person_id','encntr_id']].drop_duplicates()                
+                if len(next_templdate_data.columns) > 0:  # valid query , otherwise skip the merge
                     if x.get('internal_logic') == 'AND':
                         y_df =  merge_df_and(y_df,next_templdate_data)
-                    else:
+                    if x.get('internal_logic') == 'OR':
                         y_df =  merge_df_or(y_df,next_templdate_data)
+                    if 'WITHIN' in x.get('internal_logic'):
+                        if data_enctr != '1':
+                            next_templdate_data['encntr_id'] = None                          
+                        y_df = merge_template_by_timing(y_df,next_templdate_data,x.get('internal_logic'), x.get('interval'))               
             yc += 1
     
         if len(y_df.columns) > 0 :
@@ -592,7 +752,6 @@ def refresh_patient_numbers(j_str):
         person_ids_str = ','.join([str(x) for x in final_df.person_id.unique()])
         j_data['result_set'] = get_pat_data(person_ids_str)
         
-    return json.dumps(j_data)
- 
+    return json.dumps(j_data) 
 
   
