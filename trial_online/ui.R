@@ -26,7 +26,12 @@ sidebar <- dashboardSidebar(
     dateInput('visit_date', label='Visit Date:'),
     timeInput('visit_time', "Record Time:", seconds = FALSE),
     
-    selectizeInput()
+    awesomeCheckboxGroup(
+      inputId = "selectedTrials",
+      label = "Trials", 
+      choices = namelst,
+      selected = NULL
+    )
   )
 )
 

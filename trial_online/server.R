@@ -1,4 +1,3 @@
-#
 # This is the user-interface definition of a Shiny web application. You can
 # run the application by clicking 'Run App' above.
 #
@@ -31,18 +30,42 @@ server <- function(input, output, session) {
   
 
 # Generate a form given the input json file -------------------------------
-  cri_lst <- reactive({
+  output_form <- reactive({
     n_i <- length(sample[['inclusion']])
     n_e <- length(sample[['exclusion']])
-    
+    output_form <- tagList()
     # Inclusion 
     
     for (i in c(1 : n_i)){
       idx <- paste0('inclu_', i)
       temp <- sample['inclusion'][i]['mapped_templates']
+      output_form <- tagAppendChild(output_form, h1(paste('Inclusion criteria', i)))
       if (length(temp) > 0){
-        
+        for (j in c(1 : length(temp))){
+          idx_temp <- paste(idx, j)
+          temp_dict <- temp[[j]]
+          value_dict <- json.values(temp_dict)
+          temp_form <- json2form(value_dict, idx_temp)
+          output_form <- tagAppendChild(output_form, temp_form)
+        }
       }
+      output_form <- tagAppendChild(output_form, tags$hr())
+    }
+    
+    for (i in c(1:n_e)){
+      idx <- paste0('inclu_', i)
+      temp <- sample['exclusion'][i]['mapped_templates']
+      output_form <- tagAppendChild(output_form, h1(paste('Exclusion criteria', i)))
+      if (length(temp) > 0){
+        for (j in c(1 : length(temp))){
+          idx_temp <- paste(idx, j)
+          temp_dict <- temp[[j]]
+          value_dict <- json.values(temp_dict)
+          temp_form <- json2form(value_dict, idx_temp)
+          output_form <- tagAppendChild(ouput_form, temp_form)
+        }
+      }
+      output_form <- tagAppendChild(output_form, tags$hr())
     }
   })
 
