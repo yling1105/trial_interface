@@ -3,7 +3,6 @@ library(shinydashboard)
 library(shinyjs)
 library(shinyTime)
 library(rjson)
-library(shiny)
 
 # Read all the json files into the memory ---------------------------------
 
@@ -48,17 +47,35 @@ json2form <- function(value_dict,idx_temp){
     if ("Diagnosis code is" %in% names(value_dict)){
       choice_lst <- append(value_dict[['Diagnosis code is']], 'None')
       diag <- awesomeCheckboxGroup(
-        inputId = paste0('diag_is_', idx_temp), label = "Have following diagnosis", 
+        inputId = paste0('diag_is_', idx_temp), label = "Have following diagnosis codes:", 
         choices = choice_lst,
         selected = NULL,inline = TRUE, status = "danger"
       )
+      form <- tagAppendChild(form, diag)
     }
-    diag <- textInput(inputId = paste("diag_is_", idx_temp),label = "Diagnosis Code(Group) is:", value = temp_dict[[temp]][['Diagnosis Code is']])),
-      column(width = 3, "Group codes can be found at: https://www.icd10data.com/ICD10CM/DRG")
-    ),
+    if ('Diagnosis Code starts with' %in% names(value_dict)){
+      choice_lst <- append(value_dict[['Diagnosis Code starts with']], 'None')
+      
+      diag <- awesomeCheckboxGroup(
+        inputId = paste0('diag_like_', idx_temp), label = "Have diagnosis codes starts with:", 
+        choices = choice_lst,
+        selected = NULL,inline = TRUE, status = "danger"
+      )
+      form <- tagAppendChild(form, diag)
+    }
     
-    textInput(inputId = paste("diag_like_", idx_temp), label = "Diagnosis Code starts with:", value = temp_dict[[temp]][["Diagnosis Code starts with"]]),
-    textInput(inputId = paste("diag_desc_", idx_temp), label = "Diagnosis Description contains:", value = temp_dict[[temp]][["Diagnosis Description contains"]]),
+    if ("Diagnosis Description contains" %in% names(value_dict)){
+      choice_lst <- append(value_dict[['Diagnosis Description contains']], 'None')
+      
+      diag <- awesomeCheckboxGroup(
+        inputId = paste0('diag_desc_', idx_temp), label = "Have following diagnosis description:", 
+        choices = choice_lst,
+        selected = NULL,inline = TRUE, status = "danger"
+      )
+      form <- tagAppendChild(form, diag)
+    }
+    
+    if ('Diagnosis type ')
     selectizeInput(inputId = paste("diag_type_", idx_temp), 
                    label = "Diagnosis Type:", 
                    choices = diag_type_lst,
