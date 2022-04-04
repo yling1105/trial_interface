@@ -45,7 +45,14 @@ json2form <- function(value_dict,idx_temp){
     form <- tagAppendChild(form, textInput(inputId = paste0('race_',idx_temp), label = 'Race', choices = c("Afriacn American", "Asian", "White", "Caucasian"), selected = NULL))
     form <- tagAppend(Chile(form, textInput(inputId = paste0('race_', idx_temp), label = 'Ethic group', choices = c('Hispanic', 'Non-Hispanic'), selected=NULL)))
   } else if (temp == 'Condition by Diagnosis Code') {
-    if ("Diagnosis code is" %in% )
+    if ("Diagnosis code is" %in% names(value_dict)){
+      choice_lst <- append(value_dict[['Diagnosis code is']], 'None')
+      diag <- awesomeCheckboxGroup(
+        inputId = paste0('diag_is_', idx_temp), label = "Have following diagnosis", 
+        choices = choice_lst,
+        selected = NULL,inline = TRUE, status = "danger"
+      )
+    }
     diag <- textInput(inputId = paste("diag_is_", idx_temp),label = "Diagnosis Code(Group) is:", value = temp_dict[[temp]][['Diagnosis Code is']])),
       column(width = 3, "Group codes can be found at: https://www.icd10data.com/ICD10CM/DRG")
     ),
