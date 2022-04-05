@@ -29,22 +29,24 @@ data_files <- lapply(filelst, function(x) read_json(x))
 json.values <- function(temp_dict){
   value_dict <- list()
   for (name in names(temp_dict)){
+    print(name)
     if (temp_dict[[name]] != '' & temp_dict[[name]] != 'NULL'){
       value_dict[[name]] <- temp_dict[[name]]
     }
   }
+  value_dict
 }
 
 # Function used for generating forms given one criteria --------------------------------------
 
 json2form <- function(value_dict,idx_temp){
   form <- tagList()
-  temp <- value_dict[[template]]
+  temp <- value_dict[['template']]
   if (temp == 'Demographic'){
     form <- tagAppendChild(form, textInput(inputId = paste0('age_',idx_temp), label = 'Age'))
-    form <- tagAppendChild(form, selectInput(inputId = paste0('gdr_',idx_temp), label = 'Gender', choices = c('Female', 'Male'), selected = NULL))
-    form <- tagAppendChild(form, textInput(inputId = paste0('race_',idx_temp), label = 'Race', choices = c("Afriacn American", "Asian", "White", "Caucasian"), selected = NULL))
-    form <- tagAppend(Chile(form, textInput(inputId = paste0('race_', idx_temp), label = 'Ethic group', choices = c('Hispanic', 'Non-Hispanic'), selected=NULL)))
+    form <- tagAppendChild(form, pickerInput(inputId = paste0('gdr_',idx_temp), label = 'Gender', choices = c('Female', 'Male', 'Unknown'), selected = 'Unknown'))
+    form <- tagAppendChild(form, pickerInput(inputId = paste0('race_',idx_temp), label = 'Race', choices = c("Afriacn American", "Asian", "White", "Caucasian", 'Unknown'), selected = 'Unknown'))
+    form <- tagAppendChild(form, pickerInput(inputId = paste0('race_', idx_temp), label = 'Ethic group', choices = c('Hispanic', 'Non-Hispanic', 'Unknown'), selected='Unknown'))
   } else if (temp == 'Condition by Diagnosis Code') {
     if ("Diagnosis code is" %in% names(value_dict)){
       choice_lst <- append(value_dict[['Diagnosis code is']], 'None')
@@ -111,7 +113,8 @@ json2form <- function(value_dict,idx_temp){
   } else if (temp == 'Prescription'){
     if ('Drug Description contains' %in% names(value_dict)){
       drugs <- strsplit(value_dict[['Drug Description contains']], '[|]')
-      drugs <- append(drugs, 'None')
+      drugs <- unlist(drugs)
+      drugs <- append(drugs, 'unknown')
       diag <- awesomeCheckboxGroup(
         inputId = paste0('drug_desc_', idx_temp), label = "Patient took the drug(s):", 
         choices = drugs,
@@ -142,7 +145,7 @@ json2form <- function(value_dict,idx_temp){
     }
     
   } else if (temp == 'Event'){
-    if ('Event Name contains' %in% names(value_dcit)){
+    if ('Event Name contains' %in% names(value_dict)){
       events <- value_dict[['Event Name contains']]
       events <- append(events, 'None')
       diag <- awesomeCheckboxGroup(
@@ -179,7 +182,7 @@ json2form <- function(value_dict,idx_temp){
       form <- tagAppendChild(form, diag)
     } 
   } else if (temp == 'Lab'){
-    if ('Lab Name contains' %in% names(value_dcit)){
+    if ('Lab Name contains' %in% names(value_dict)){
       labs <- value_dict[['Lab Name contains']]
       labs <- append(labs, 'None')
       diag <- awesomeCheckboxGroup(
@@ -216,7 +219,9 @@ json2form <- function(value_dict,idx_temp){
       form <- tagAppendChild(form, diag)
     } 
   } else if (temp == 'Order'){
-    orders <- strsplit(value_dict[['order_name']], '[|]')
+    print(value_dict)
+    orders <- strsplit(value_dict[['Procedure Name contains']], '[|]')
+    orders <- unlist(orders)
     orders <- append(orders, 'None')
     diag <- awesomeCheckboxGroup(
       inputId = paste0('order_name_', idx_temp), label = "Patient took the order:", 
@@ -225,7 +230,7 @@ json2form <- function(value_dict,idx_temp){
     )
     form <- tagAppendChild(form, diag)
     
-    if ('Time Period within' %in% names(val_dict)){
+    if ('Time Period within' %in% names(value_dict)){
       time <- value_dict[['Time period within']]
       diag <- prettySwitch(
         inputId = paste0('order_time_', idx_temp),
@@ -238,8 +243,8 @@ json2form <- function(value_dict,idx_temp){
     
     if ('Encounter based' %in% names(value_dict)){
       diag <- prettySwitch(
-        inputId = paste('order_base_', idx_temp),
-        label = paste('Encounter based', time),
+        inputId = paste0('order_base_', idx_temp),
+        label = 'Encounter based',
         status = "success",
         fill = TRUE
       )
@@ -277,5 +282,5 @@ json2form <- function(value_dict,idx_temp){
     }
   }
   
-  
+  form
 }

@@ -10,9 +10,9 @@ server <- function(input, output, session) {
 
 # Upload a json file  -----------------------------------------------------
   
-  sample <- reactive({
+  sample <- eventReactive(input$genForm,{
     trial_temp <- input$selectedTrials
-    idx <- match(temp)
+    idx <- match(trial_temp, namelst)
     sample <- data_files[[idx]]
     sample
   })
@@ -20,15 +20,33 @@ server <- function(input, output, session) {
 
 # Generate a form given the input json file -------------------------------
   output_form <- reactive({
-    n_i <- length(sample()[['inclusion']])
-    n_e <- length(sample()[['exclusion']])
+    data <- sample()
+    n_i <- length(data[['inclusion']])
+    n_e <- length(data[['exclusion']])
     output_form <- tagList()
     # Inclusion 
     
     for (i in c(1 : n_i)){
       idx <- paste0('inclu_', i)
-      temp <- sample()['inclusion'][i]['mapped_templates']
+      temp <- data[['inclusion']][[i]][['mapped_templates']]
       output_form <- tagAppendChild(output_form, h1(paste('Inclusion criteria', i)))
+      if (length(temp) > 0){
+        for (j in c(1 : length(temp))){
+          idx_temp <- paste(idx, j)
+          temp_dict <- temp[[j]]
+          value_dict <- json.values(temp_dict)
+          print(value_dict)
+          temp_form <- json2form(value_dict, idx_temp)
+          output_form <- tagAppendChild(output_form, temp_form)
+        }
+      }
+      output_form <- tagAppendChild(output_form, tags$hr())
+    }
+    
+    for (i in c(1:n_e)){
+      idx <- paste0('inclu_', i)
+      temp <- data[['exclusion']][[i]][['mapped_templates']]
+      output_form <- tagAppendChild(output_form, h1(paste('Exclusion criteria', i)))
       if (length(temp) > 0){
         for (j in c(1 : length(temp))){
           idx_temp <- paste(idx, j)
@@ -40,25 +58,10 @@ server <- function(input, output, session) {
       }
       output_form <- tagAppendChild(output_form, tags$hr())
     }
-    
-    for (i in c(1:n_e)){
-      idx <- paste0('inclu_', i)
-      temp <- sample()['exclusion'][i]['mapped_templates']
-      output_form <- tagAppendChild(output_form, h1(paste('Exclusion criteria', i)))
-      if (length(temp) > 0){
-        for (j in c(1 : length(temp))){
-          idx_temp <- paste(idx, j)
-          temp_dict <- temp[[j]]
-          value_dict <- json.values(temp_dict)
-          temp_form <- json2form(value_dict, idx_temp)
-          output_form <- tagAppendChild(ouput_form, temp_form)
-        }
-      }
-      output_form <- tagAppendChild(output_form, tags$hr())
-    }
+    output_form
   })
   
-  qe_pat <- renderUI(output_form())
+  output$qe_pat <- renderUI(output_form())
 
 # Next page event ---------------------------------------------------------
   
