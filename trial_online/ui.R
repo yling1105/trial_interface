@@ -24,14 +24,19 @@ sidebar <- dashboardSidebar(
     style = "position: relative; overflow: visible",
     
     dateInput('visit_date', label='Visit Date:'),
-    timeInput('visit_time', "Record Time:", seconds = FALSE),
+    #timeInput('visit_time', "Record Time:", seconds = FALSE),
     
     awesomeCheckboxGroup(
       inputId = "selectedTrials",
       label = "Trials", 
       choices = namelst,
       selected = NULL
-    )
+    ),
+    
+    actionBttn(inputId = "genForm", label = "Intialize Criteria",
+               style = "material-flat", color='primary'),
+    
+    menuItem('Eligibility form',tabName = 'form')
   )
 )
 
@@ -39,7 +44,10 @@ sidebar <- dashboardSidebar(
 
 
 body <- dashboardBody(
-  useShinyjs()
+  useShinyjs(),
+  tabItems(
+    tabItem('form', uiOutput("qe_pat"))
+  )
 )
 
 

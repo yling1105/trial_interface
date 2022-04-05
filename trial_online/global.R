@@ -3,6 +3,7 @@ library(shinydashboard)
 library(shinyjs)
 library(shinyTime)
 library(rjson)
+library(shinyWidgets)
 
 # Read all the json files into the memory ---------------------------------
 
@@ -21,6 +22,7 @@ read_json <- function(file_name){
   return(a)
 }
 
+data_files <- lapply(filelst, function(x) read_json(x)) 
 
 # Extract existing values from the json file ------------------------------
 

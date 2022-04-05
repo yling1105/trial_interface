@@ -9,36 +9,25 @@
 server <- function(input, output, session) {
 
 # Upload a json file  -----------------------------------------------------
-  output$getData <- reactive({
-    return(!is.null(input$getData))
-  })
-  
-  outputOptions(output, "getData", suspendWhenHidden = FALSE)
   
   sample <- reactive({
-    file1 <- input$getData
-    if (is.null(file1)) { 
-      return() 
-    } 
-    
-    dataset <- fromJSON(file=file1$datapath)
-    sample <- list()
-    sample[['inclusion']] <- dataset$inclusion
-    sample[['exclusion']] <- dataset$exclusion
+    trial_temp <- input$selectedTrials
+    idx <- match(temp)
+    sample <- data_files[[idx]]
     sample
   })
   
 
 # Generate a form given the input json file -------------------------------
   output_form <- reactive({
-    n_i <- length(sample[['inclusion']])
-    n_e <- length(sample[['exclusion']])
+    n_i <- length(sample()[['inclusion']])
+    n_e <- length(sample()[['exclusion']])
     output_form <- tagList()
     # Inclusion 
     
     for (i in c(1 : n_i)){
       idx <- paste0('inclu_', i)
-      temp <- sample['inclusion'][i]['mapped_templates']
+      temp <- sample()['inclusion'][i]['mapped_templates']
       output_form <- tagAppendChild(output_form, h1(paste('Inclusion criteria', i)))
       if (length(temp) > 0){
         for (j in c(1 : length(temp))){
@@ -54,7 +43,7 @@ server <- function(input, output, session) {
     
     for (i in c(1:n_e)){
       idx <- paste0('inclu_', i)
-      temp <- sample['exclusion'][i]['mapped_templates']
+      temp <- sample()['exclusion'][i]['mapped_templates']
       output_form <- tagAppendChild(output_form, h1(paste('Exclusion criteria', i)))
       if (length(temp) > 0){
         for (j in c(1 : length(temp))){
@@ -69,7 +58,7 @@ server <- function(input, output, session) {
     }
   })
   
-  
+  qe_pat <- renderUI(output_form())
 
 # Next page event ---------------------------------------------------------
   
@@ -105,6 +94,7 @@ server <- function(input, output, session) {
       # otherwise just return the last questions
       return(questions[length(questions)])
     }
+    
   })
   
   
