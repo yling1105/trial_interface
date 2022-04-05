@@ -68,6 +68,8 @@ server <- function(input, output, session) {
       output_form <- tagAppendChild(output_form, tags$hr())
     }
   })
+  
+  
 
 # Next page event ---------------------------------------------------------
   
