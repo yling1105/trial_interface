@@ -29,8 +29,8 @@ data_files <- lapply(filelst, function(x) read_json(x))
 json.values <- function(temp_dict){
   value_dict <- list()
   for (name in names(temp_dict)){
-    print(name)
-    if (temp_dict[[name]] != '' & temp_dict[[name]] != 'NULL'){
+    #print(name)
+    if ((temp_dict[[name]] != '') & (temp_dict[[name]] != 'NULL')){
       value_dict[[name]] <- temp_dict[[name]]
     }
   }
@@ -46,23 +46,27 @@ json2form <- function(value_dict,idx_temp){
     form <- tagAppendChild(form, textInput(inputId = paste0('age_',idx_temp), label = 'Age'))
     form <- tagAppendChild(form, pickerInput(inputId = paste0('gdr_',idx_temp), label = 'Gender', choices = c('Female', 'Male', 'Unknown'), selected = 'Unknown'))
     form <- tagAppendChild(form, pickerInput(inputId = paste0('race_',idx_temp), label = 'Race', choices = c("Afriacn American", "Asian", "White", "Caucasian", 'Unknown'), selected = 'Unknown'))
-    form <- tagAppendChild(form, pickerInput(inputId = paste0('race_', idx_temp), label = 'Ethic group', choices = c('Hispanic', 'Non-Hispanic', 'Unknown'), selected='Unknown'))
+    form <- tagAppendChild(form, pickerInput(inputId = paste0('ethic_', idx_temp), label = 'Ethic group', choices = c('Hispanic', 'Non-Hispanic', 'Unknown'), selected='Unknown'))
   } else if (temp == 'Condition by Diagnosis Code') {
-    if ("Diagnosis code is" %in% names(value_dict)){
-      choice_lst <- append(value_dict[['Diagnosis code is']], 'None')
+    if ("Diagnosis Code is" %in% names(value_dict)){
+      codes <- strsplit(value_dict[['Diagnosis Code is']], '[|]')
+      codes <- unlist(codes)
+      codes <- append(codes, 'None')
       diag <- awesomeCheckboxGroup(
         inputId = paste0('diag_is_', idx_temp), label = "Have following diagnosis codes:", 
-        choices = choice_lst,
+        choices = codes,
         selected = NULL,inline = TRUE, status = "danger"
       )
       form <- tagAppendChild(form, diag)
     }
     if ('Diagnosis Code starts with' %in% names(value_dict)){
-      choice_lst <- append(value_dict[['Diagnosis Code starts with']], 'None')
+      codes <- strsplit(value_dict[['Diagnosis Code starts with']], '[|]')
+      codes <- unlist(codes)
+      codes <- append(codes, 'None')
       
       diag <- awesomeCheckboxGroup(
         inputId = paste0('diag_like_', idx_temp), label = "Have diagnosis codes starts with:", 
-        choices = choice_lst,
+        choices = codes,
         selected = NULL,inline = TRUE, status = "danger"
       )
       form <- tagAppendChild(form, diag)
@@ -281,6 +285,5 @@ json2form <- function(value_dict,idx_temp){
       form <- tagAppendChild(form, diag)
     }
   }
-  
   form
 }

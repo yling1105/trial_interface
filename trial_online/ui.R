@@ -33,8 +33,8 @@ sidebar <- dashboardSidebar(
       selected = NULL
     ),
     
-    actionBttn(inputId = "genForm", label = "Intialize Criteria",
-               style = "material-flat", color='primary'),
+    actionButton(inputId = "genForm", label = "Intialize Criteria",
+                 style = "color: #fff; background-color: #1E90FF; border-color: #fff;padding: 5px 5px 5px 5px;margin: 5px 5px 10px 18px; "),
     
     menuItem('Eligibility form',tabName = 'form')
   )
