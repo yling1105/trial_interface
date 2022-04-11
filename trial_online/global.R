@@ -346,14 +346,38 @@ judgement_func <- function(standard, input, output, session){
             }
           }
         } else if (temp[[j]][['template']] == 'Condition by Diagnosis Code'){
-          
+
+          # Diagnosis ---------------------------------------------------------------
+
           if ('Diagnosis Code is' %in% names(value_dict)){
             icd <- input[[paste0('diag_is_', idx_temp)]]
             if (icd == 'None'){
               return(FALSE)
             } else if (icd == ''){
-              undefined <- append(undefined, paste('Template', i, 'diagnosis code is undefined.'))
+              undefined <- append(undefined, paste('Template', i, ': Diagnosis code is undefined.'))
             }
+          }
+          
+          if ('Diagnosis Code starts with' %in% names(value_dict)){
+            icd_h <- input[[paste0('diag_like_', idx_temp)]]
+            if (icd_h == 'None'){
+              return(FALSE)
+            } else if (icd_h == ''){
+              undefined <- append(undefined, paste('Template', i, ': Diagnosis code is undefined.'))
+            }
+          }
+          
+          if ("Diagnosis Description contains" %in% names(value_dict)){
+            icd_d <- input[[paste0('diag')]]
+            if (icd_d == 'None'){
+              return(FALSE)
+            } else if (icd_d == ''){
+              undefined <- append(undefined, paste('Template', i, ': Diagnosis description is not provided.'))
+            }
+          }
+          
+          if (""){
+            
           }
         }
       }
