@@ -42,6 +42,7 @@ json.values <- function(temp_dict){
 json2form <- function(value_dict,idx_temp){
   form <- tagList()
   temp <- value_dict[['template']]
+  
   if (temp == 'Demographic'){
     form <- tagAppendChild(form, textInput(inputId = paste0('age_',idx_temp), label = 'Age'))
     form <- tagAppendChild(form, pickerInput(inputId = paste0('gdr_',idx_temp), label = 'Gender', choices = c('Female', 'Male', 'Unknown'), selected = 'Unknown'))
@@ -65,7 +66,7 @@ json2form <- function(value_dict,idx_temp){
       codes <- append(codes, 'None')
       
       diag <- awesomeCheckboxGroup(
-        inputId = paste0('diag_like_', idx_temp), label = "Have diagnosis codes starts with:", 
+        inputId = paste0('diag_like_', idx_temp), label = "Have diagnosis codes start with:", 
         choices = codes,
         selected = NULL,inline = TRUE, status = "danger"
       )
@@ -286,4 +287,82 @@ json2form <- function(value_dict,idx_temp){
     }
   }
   form
+}
+
+# judgement function ------------------------------------------------------
+
+judgement_func <- function(standard, input, output, session){
+  n_i <- length(standard[['inclusion']])
+  n_e <- length(standard[['exclusion']])
+  
+  undefined <- c()
+  
+  for (i in c(1:n_i)){
+
+  # Inclusion ---------------------------------------------------------------
+
+    idx <- paste0('inclu_', i)
+    temp <- standard[['inclusion']][[i]][['mapped_templates']]
+    if (length(temp) > 0){
+      for (j in c(1 : j)){
+        idx_temp <- paste0(idx, j)
+        value_dict <- json.values(temp[[j]])
+        if (temp[[j]]['template'] == 'Demographic'){
+
+        # Demographic -------------------------------------------------------------
+          
+          age <- input[[paste0('age_', idx_temp)]]
+          sex <- input[[paste0('gdr_', idx_temp)]]
+          race <- input[[paste0('race_', idx_temp)]]
+          ethic <- input[[paste0('ethic_', idx_temp)]]
+          
+          if ('Age from ( include )' %in% names(value_dict)){
+            if (age < value_dict[['Age from ( include )']]){
+              return(FALSE)
+            }
+          }
+          
+          if ('Age to ( include )' %in% names(value_dict)){
+            if (age > value_dict[['Age to ( include )']]) {
+              return(FALSE)
+            }
+          }
+          
+          if ('Race is' %in% names(value_dict)){
+            if (!(race %in% value_dict[['Race is']])){
+              return(FALSE)
+            }
+          }
+          
+          if ('Gender' %in% names(value_dict)){
+            if (!(sex != value_dict[['Gender']])){
+              return(FALSE)
+            }
+          }
+          
+          if ('Ethic_Group is' %in% names(value_dict)) {
+            if (!(ethic != value_dict[['Ethic_Group is']])){
+              return(FALSE)
+            }
+          }
+        } else if (temp[[j]][['template']] == 'Condition by Diagnosis Code'){
+          
+          if ('Diagnosis Code is' %in% names(value_dict)){
+            icd <- input[[paste0('diag_is_', idx_temp)]]
+            if (icd == 'None'){
+              return(FALSE)
+            } else if (icd == ''){
+              undefined <- append(undefined, paste('Template', i, 'diagnosis code is undefined.'))
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  for (i in c(1 : n_e)){
+    
+  }
+  
+  return(TRUE)
 }

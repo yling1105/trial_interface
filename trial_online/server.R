@@ -31,20 +31,19 @@ server <- function(input, output, session) {
       
       idx <- paste0('inclu_', i)
       temp <- data[['inclusion']][[i]][['mapped_templates']]
+      text_temp <- data[['inclusion']][[i]][['text']]
       output_form <- tagAppendChild(output_form, h3(paste('Inclusion criteria', i)))
       if (length(temp) > 0){
-        
+        output_form <- tagAppendChild(output_form, h5(text_temp))
         for (j in c(1 : length(temp))){
-          idx_temp <- paste(idx, j)
+          idx_temp <- paste0(idx, j)
           temp_dict <- temp[[j]]
           value_dict <- json.values(temp_dict)
           temp_form <- json2form(value_dict, idx_temp)
-          print(temp_form)
           output_form <- tagAppendChild(output_form, temp_form)
           print(output_form)
         }
       } else {
-        text_temp <- data[['inclusion']][[i]][['text']]
         diag <- prettySwitch(
           inputId = paste0('txt_inclu_', i),
           label = text_temp,
@@ -59,19 +58,18 @@ server <- function(input, output, session) {
       
       idx <- paste0('exclu_', i)
       temp <- data[['exclusion']][[i]][['mapped_templates']]
-      
+      text_temp <- data[['exclusion']][[i]][['text']]
       output_form <- tagAppendChild(output_form, h3(paste('Exclusion criteria', i)))
       if (length(temp) > 0){
-        #print(temp)
+        output_form <- tagAppendChild(output_form, h5(text_temp))
         for (j in c(1 : length(temp))){
-          idx_temp <- paste(idx, j)
+          idx_temp <- paste0(idx, j)
           temp_dict <- temp[[j]]
           value_dict <- json.values(temp_dict)
           temp_form <- json2form(value_dict, idx_temp)
           output_form <- tagAppendChild(output_form, temp_form)
         }
       } else{
-        text_temp <- data[['exclusion']][[i]][['text']]
         diag <- prettySwitch(
           inputId = paste0('txt_exclu_', i),
           label = text_temp,
@@ -91,24 +89,13 @@ server <- function(input, output, session) {
   
   output$qe_pat <- renderUI(output_form())
 
-# Next page event ---------------------------------------------------------
+# judgement event ---------------------------------------------------------
   
   ntext <- eventReactive(input$goButton,{
     
-    # Initialize values; refresh each session
-    values <- reactiveValues()
-    values$cri_index <- 1
+    standard <- sample()
     
-    # Check if the value satisfy the inclusion or exclusion criteria
-    #   If satisfy an inclusion criteria: 
-    #     Check if the counter `values$count` are not equal to the length of your questions
-    #       If not then increment questions by 1 and return that question
-    # If satisfy an exclusion criteria:
-    #   Break; Raise an notice that the patients is not qualified for this trial
-    #   else: go next
-    # Note that initially the button hasn't been pressed yet so the `ntext()` will not be executed
-    
-    flag <- check_cri()
+    flag <- check_cri(standard, input, output, session)
     if (flag){
       if (values$cri_index != length(cri_lst)){
         values$cri_index <- values$cri_index + 1
