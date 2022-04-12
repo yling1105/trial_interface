@@ -309,9 +309,8 @@ server <- function(input, output, session) {
     inclu <- new_data[['inclusion']]
     exclu <- new_data[['exclusion']]
     
-    ### save inclusion part -----------------------------------------------------
-    
     for (i in c(1:length(inclu))){
+      # save inclusion part -----------------------------------------------------
       idx_temp0 <- paste('inclu', i)
       logic_temp <- input[[paste('inclu_logic', idx_temp0)]]
       new_data[['inclusion']][[i]][['internal_logic']] <- logic_temp
@@ -576,8 +575,9 @@ server <- function(input, output, session) {
               new_data[["exclusion"]][[i]][["mapped_templates"]][[j]][["Encounter based"]] <- '0'
             }
             
-            ### Lab -------- 
+            
           } else if (template_id == 'Lab'){
+            ### Lab -------- 
             new_data[['exclusion']][[i]][["mapped_templates"]][[j]][['Lab Name contains']] <- input[[paste('lab_name_', idx_temp)]]
             new_data[['exclusion']][[i]][["mapped_templates"]][[j]][['LOINC is']] <- input[[paste('lab_code_', idx_temp)]]
             new_data[['exclusion']][[i]][["mapped_templates"]][[j]][['Value from ( include )']] <- input[[paste('lab_val_fromi_', idx_temp)]]
@@ -617,7 +617,7 @@ server <- function(input, output, session) {
       }
     }
     
-    ### Save added part -----------------------------------------------------
+    # Save added part -----------------------------------------------------
     
     if (input$addCriNum != '' & input$addCriNum != '0'){
       n_added <- strtoi(input$addCriNum)

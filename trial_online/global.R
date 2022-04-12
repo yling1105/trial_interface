@@ -128,7 +128,7 @@ json2form <- function(value_dict,idx_temp){
       form <- tagAppendChild(form, diag)
     }
     
-    if ('Time period within' %in% value_dict){
+    if ('Time Period within' %in% value_dict){
       time <- value_dict[['Time period within']]
       diag <- prettySwitch(
         inputId = 'drug_time_',
@@ -138,18 +138,9 @@ json2form <- function(value_dict,idx_temp){
       )
       form <- tagAppendChild(form, diag)
     }
-    
-    if ('Encounter based' %in% value_dict){
-      diag <- prettySwitch(
-        inputId = 'drug_base_',
-        label = paste('Encounter based', time),
-        status = "success",
-        fill = TRUE
-      )
-      form <- tagAppendChild(form, diag)
-    }
-    
+  
   } else if (temp == 'Event'){
+    ## Event -----------
     if ('Event Name contains' %in% names(value_dict)){
       events <- value_dict[['Event Name contains']]
       events <- append(events, 'None')
@@ -161,12 +152,12 @@ json2form <- function(value_dict,idx_temp){
       form <- tagAppendChild(form, diag)
     }
     
-    if ('event_val_fromi' %in% names(value_dict)|'event_val_fromn' %in% names(value_dict) | 'event_val_toi' %in% names(value_dict) | 'event_val_ton' %in% names(value_dict)){
+    if ('Value from ( include )' %in% names(value_dict)|'Value from ( not include )' %in% names(value_dict) | 'Value to ( include )' %in% names(value_dict) | 'Value to ( not include )' %in% names(value_dict)){
       diag <- textInput(inputId = paste0('event_val_', idx_temp), label = 'Event value:')
       form <- tagAppendChild(form, diag)
     }
     
-    if ('Time period within' %in% value_dict){
+    if ('Time Period within' %in% value_dict){
       time <- value_dict[['Time period within']]
       diag <- prettySwitch(
         inputId = 'event_time_',
@@ -177,16 +168,9 @@ json2form <- function(value_dict,idx_temp){
       form <- tagAppendChild(form, diag)
     }
     
-    if ('Encounter based' %in% value_dict){
-      diag <- prettySwitch(
-        inputId = 'event_base_',
-        label = paste('Encounter based', time),
-        status = "success",
-        fill = TRUE
-      )
-      form <- tagAppendChild(form, diag)
-    } 
+    
   } else if (temp == 'Lab'){
+    # Lab -----------
     if ('Lab Name contains' %in% names(value_dict)){
       labs <- value_dict[['Lab Name contains']]
       labs <- append(labs, 'None')
@@ -203,7 +187,7 @@ json2form <- function(value_dict,idx_temp){
       form <- tagAppendChild(form, diag)
     }
     
-    if ('Time period within' %in% value_dict){
+    if ('Time Period within' %in% value_dict){
       time <- value_dict[['Time period within']]
       diag <- prettySwitch(
         inputId = 'lab_time_',
@@ -368,7 +352,7 @@ judgement_func <- function(standard, input, output, session){
           }
           
           if ("Diagnosis Description contains" %in% names(value_dict)){
-            icd_d <- input[[paste0('diag')]]
+            icd_d <- input[[paste0('diag_desc_', idx_temp)]]
             if (icd_d == 'None'){
               return(FALSE)
             } else if (icd_d == ''){
@@ -376,9 +360,93 @@ judgement_func <- function(standard, input, output, session){
             }
           }
           
-          if (""){
+          if ("Diagnosis Type" %in$% names(value_dict)){
+            icd_t <- input[['Diagnosis type']]
+            if (icd_t == 'None'){
+              return(FALSE)
+            } else if (icd_t == ''){
+              undefined <- append(undefined, paste('Template', i, ': Diagnosis type is not provided'))
+            }
+          }
+          
+          if ("Time Period within" %in% names(value_dict)){
+            icd_t <- input[['Time Period within']]
+            if (icd_t == 'None'){
+              return(FALSE)
+            } else if (icd_t == '') {
+              undefined <- append(undefined, paste('Template', i, ': Diagnosis time period is not provided.'))
+            } else{
+              if (icd_t > value_dict[['Time Period within']]){
+                return(FALSE)
+              }
+            }
+          }
+          
+        } else if (temp[[j]][['Template']] == 'Prescription'){
+
+          # Drug --------------------------------------------------------------------
+
+          
+          if ("Drug Description contains" %in% names(value_dict)){
+            dd <- input[[paste('drug_desc_', idx_temp)]]
+            if (dd == 'None'){
+              return(FALSE)
+            } else if (dd == ''){
+              undefined <- append(undefined, paste('Template', i, ))
+            }
+          } else if ("Time Period within" %in% names(value_dict)) {
+            dt <- input[[paste('Time Period within')]]
+            if (dt == 'None'){
+              return(FALSE)
+            } else if (dt == ''){
+              undefined <- append(undefined, paste('Template', i, ': Drug prescription time period is unclear.'))
+            } else {
+              if (dt > value_dict[['Time Period within']]){
+                 return(FALSE)
+              }
+            }
+          }
+          
+        } else if (temp == 'Event'){
+
+          # Event -------------------------------------------------------------------
+
+          
+          event <- input[[paste('event_name_', idx_temp)]]
+          if (event == 'None'){
+            return(FALSE)
+          } else if (event == ''){
             
           }
+          
+          if ('Value from ( include )' %in% names(value_dict) | 'Value from ( not include )' %in% names(value_dict) | 'Value to ( include )' %in% names(value_dict) | 'Value to ( not include )' %in% names(value_dict)){
+            value <- input[[paste0('event_val_', idx_temp)]]
+            if (value == ''){
+              if ('Value from ( include )' %in% names(value_dict)){
+                if (value < value_dict[['value']]){
+                  return(FALSE)
+                }
+              } else if ('Value from ( not include )' %in% names(value_dict)){
+                if (value <= value_dict['Value from ( not include )']){
+                  return(FALSE)
+                }
+              }
+              
+              if ('Value to ( include )' %in% names(value_dict)) {
+                if (value > value_dict[['Value to ( include )']]){
+                  return(FALSE)
+                }
+              } else if ('Value to ( not include )' %in% names(value_dict)){
+                if (value >= value_dict[['Value to ( not include )']]){
+                  return(FALSE)
+                }
+              }
+              
+              
+            }
+          }
+          
+          if ('Time Period within')
         }
       }
     }
