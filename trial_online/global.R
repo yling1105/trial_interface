@@ -131,7 +131,7 @@ json2form <- function(value_dict,idx_temp){
     if ('Time Period within' %in% value_dict){
       time <- value_dict[['Time period within']]
       diag <- prettySwitch(
-        inputId = 'drug_time_',
+        inputId = paste0('drug_time_', idx_temp),
         label = paste('Time period within', time),
         status = "success",
         fill = TRUE
@@ -160,7 +160,7 @@ json2form <- function(value_dict,idx_temp){
     if ('Time Period within' %in% value_dict){
       time <- value_dict[['Time period within']]
       diag <- prettySwitch(
-        inputId = 'event_time_',
+        inputId = paste0('event_time_', idx_temp),
         label = paste('Time period within', time),
         status = "success",
         fill = TRUE
@@ -208,6 +208,10 @@ json2form <- function(value_dict,idx_temp){
       form <- tagAppendChild(form, diag)
     } 
   } else if (temp == 'Order'){
+
+    # Order -------------------------------------------------------------------
+
+    
     print(value_dict)
     orders <- strsplit(value_dict[['Procedure Name contains']], '[|]')
     orders <- unlist(orders)
@@ -278,7 +282,7 @@ json2form <- function(value_dict,idx_temp){
 judgement_func <- function(standard, input, output, session){
   n_i <- length(standard[['inclusion']])
   n_e <- length(standard[['exclusion']])
-  
+  flag <- -1
   undefined <- c()
   
   for (i in c(1:n_i)){
@@ -302,31 +306,31 @@ judgement_func <- function(standard, input, output, session){
           
           if ('Age from ( include )' %in% names(value_dict)){
             if (age < value_dict[['Age from ( include )']]){
-              return(FALSE)
+              flag <- 0
             }
           }
           
           if ('Age to ( include )' %in% names(value_dict)){
             if (age > value_dict[['Age to ( include )']]) {
-              return(FALSE)
+              flag <- 0
             }
           }
           
           if ('Race is' %in% names(value_dict)){
             if (!(race %in% value_dict[['Race is']])){
-              return(FALSE)
+              flag <- 0
             }
           }
           
           if ('Gender' %in% names(value_dict)){
             if (!(sex != value_dict[['Gender']])){
-              return(FALSE)
+              flag <- 0
             }
           }
           
           if ('Ethic_Group is' %in% names(value_dict)) {
             if (!(ethic != value_dict[['Ethic_Group is']])){
-              return(FALSE)
+              flag <- 0
             }
           }
         } else if (temp[[j]][['template']] == 'Condition by Diagnosis Code'){
@@ -336,7 +340,7 @@ judgement_func <- function(standard, input, output, session){
           if ('Diagnosis Code is' %in% names(value_dict)){
             icd <- input[[paste0('diag_is_', idx_temp)]]
             if (icd == 'None'){
-              return(FALSE)
+              flag <- 0
             } else if (icd == ''){
               undefined <- append(undefined, paste('Template', i, ': Diagnosis code is undefined.'))
             }
@@ -345,7 +349,7 @@ judgement_func <- function(standard, input, output, session){
           if ('Diagnosis Code starts with' %in% names(value_dict)){
             icd_h <- input[[paste0('diag_like_', idx_temp)]]
             if (icd_h == 'None'){
-              return(FALSE)
+              flag <- 0
             } else if (icd_h == ''){
               undefined <- append(undefined, paste('Template', i, ': Diagnosis code is undefined.'))
             }
@@ -354,7 +358,7 @@ judgement_func <- function(standard, input, output, session){
           if ("Diagnosis Description contains" %in% names(value_dict)){
             icd_d <- input[[paste0('diag_desc_', idx_temp)]]
             if (icd_d == 'None'){
-              return(FALSE)
+              flag <- 0
             } else if (icd_d == ''){
               undefined <- append(undefined, paste('Template', i, ': Diagnosis description is not provided.'))
             }
@@ -363,7 +367,7 @@ judgement_func <- function(standard, input, output, session){
           if ("Diagnosis Type" %in$% names(value_dict)){
             icd_t <- input[['Diagnosis type']]
             if (icd_t == 'None'){
-              return(FALSE)
+              flag <- 0
             } else if (icd_t == ''){
               undefined <- append(undefined, paste('Template', i, ': Diagnosis type is not provided'))
             }
@@ -372,12 +376,12 @@ judgement_func <- function(standard, input, output, session){
           if ("Time Period within" %in% names(value_dict)){
             icd_t <- input[['Time Period within']]
             if (icd_t == 'None'){
-              return(FALSE)
+              flag <- 0
             } else if (icd_t == '') {
               undefined <- append(undefined, paste('Template', i, ': Diagnosis time period is not provided.'))
             } else{
               if (icd_t > value_dict[['Time Period within']]){
-                return(FALSE)
+                flag <- 0
               }
             }
           }
@@ -390,19 +394,19 @@ judgement_func <- function(standard, input, output, session){
           if ("Drug Description contains" %in% names(value_dict)){
             dd <- input[[paste('drug_desc_', idx_temp)]]
             if (dd == 'None'){
-              return(FALSE)
+              flag <- 0
             } else if (dd == ''){
               undefined <- append(undefined, paste('Template', i, ))
             }
           } else if ("Time Period within" %in% names(value_dict)) {
             dt <- input[[paste('Time Period within')]]
             if (dt == 'None'){
-              return(FALSE)
+              flag <- 0
             } else if (dt == ''){
               undefined <- append(undefined, paste('Template', i, ': Drug prescription time period is unclear.'))
             } else {
               if (dt > value_dict[['Time Period within']]){
-                 return(FALSE)
+                 flag <- 0
               }
             }
           }
@@ -414,9 +418,9 @@ judgement_func <- function(standard, input, output, session){
           
           event <- input[[paste('event_name_', idx_temp)]]
           if (event == 'None'){
-            return(FALSE)
+            flag <- 0
           } else if (event == ''){
-            
+            return
           }
           
           if ('Value from ( include )' %in% names(value_dict) | 'Value from ( not include )' %in% names(value_dict) | 'Value to ( include )' %in% names(value_dict) | 'Value to ( not include )' %in% names(value_dict)){
@@ -441,12 +445,77 @@ judgement_func <- function(standard, input, output, session){
                   return(FALSE)
                 }
               }
-              
-              
             }
           }
           
-          if ('Time Period within')
+          if ('Time Period within' %in% names(value_dict)){
+            et <- input[[paste0('event_time_', idx_temp)]]
+            if (et == ''){
+              undefined <- append(undefined, paste('Template', i, ': Event time is not clear.'))
+            } else if (et > value_dict[['Time Period within']]){
+              flag <- 0
+            }
+          }
+        } else if (temp == 'Lab'){
+
+          # Lab ---------------------------------------------------------------------
+          
+          l_nm <- value_dict[['Lab Name contains']]
+          if (l_nm == 'None'){
+            flag <- 0
+          } else if (l_nm == ''){
+            
+          }
+          
+          if ('Value from ( include )' %in% names(value_dict) | 'Value from ( not include )' %in% names(value_dict) | 'Value to ( include )' %in% names(value_dict) | 'Value to ( not include )' %in% names(value_dict)){
+            value <- input[[paste0('lab_val_', idx_temp)]]
+            if (value == ''){
+              if ('Value from ( include )' %in% names(value_dict)){
+                if (value < value_dict[['value']]){
+                  return(FALSE)
+                }
+              } else if ('Value from ( not include )' %in% names(value_dict)){
+                if (value <= value_dict['Value from ( not include )']){
+                  return(FALSE)
+                }
+              }
+              
+              if ('Value to ( include )' %in% names(value_dict)) {
+                if (value > value_dict[['Value to ( include )']]){
+                  return(FALSE)
+                }
+              } else if ('Value to ( not include )' %in% names(value_dict)){
+                if (value >= value_dict[['Value to ( not include )']]){
+                  return(FALSE)
+                }
+              }
+            }
+          }
+          
+          if ('Time Period within' %in% names(value_dict)){
+            lt <- input[[paste0('lab_time_', idx_temp)]]
+            if (lt == ''){
+              undefined <- append(undefined, paste('Template', i, ': Lab test time is not clear.'))
+            } else if (lt > value_dict[['Time Period within']]) {
+              flag <- 0
+            }
+          }
+          
+        } else if (temp == 'Order'){
+
+          # Order -------------------------------------------------------------------
+          on <- input[[paste0('order_name', idx_temp)]]
+          if (on == ''){
+            undefined <- append(undefined, paste('Template', i, ': Order name is not provided.'))
+          }
+          
+          if ('Time Period within' %in% names(value_dict)){
+            ot <- input[[paste0('order_time', idx_temp)]]
+            if (ot > value_dict[['Time Period within']]){
+              flag <- 0
+            }
+          }
+          
         }
       }
     }
