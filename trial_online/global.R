@@ -390,7 +390,6 @@ judgement_func <- function(standard, input, output, session){
         } else if (temp[[j]][['Template']] == 'Prescription'){
 
           # Drug --------------------------------------------------------------------
-
           
           if ("Drug Description contains" %in% names(value_dict)){
             dd <- input[[paste('drug_desc_', idx_temp)]]
@@ -529,7 +528,7 @@ judgement_func <- function(standard, input, output, session){
     flag_lst <- vector()
     idx <- paste0('exclu_', i)
     temp <- standard[['exclusion']][[i]][['mapped_templates']]
-    logic <- standard[['exclusion']][[i]][['']]
+    logic <- standard[['exclusion']][[i]][['internal_logic']]
     if (length(temp) > 0){
       for (j in c(1 : length(temp))){
         
@@ -632,32 +631,32 @@ judgement_func <- function(standard, input, output, session){
               undefined <- append(undefined, paste('Template', i, ': Diagnosis time period is not provided.'))
             } else{
               if (icd_t > value_dict[['Time Period within']]){
-                flag <- 0
+                flag_temp <- 0
               }
             }
           }
+          flag_lst[j] <- flag_temp
           
         } else if (temp[[j]][['Template']] == 'Prescription'){
           
           # Drug --------------------------------------------------------------------
           
-          
           if ("Drug Description contains" %in% names(value_dict)){
             dd <- input[[paste('drug_desc_', idx_temp)]]
             if (dd == 'None'){
-              flag <- 0
+              flag_temp <- 0
             } else if (dd == ''){
               undefined <- append(undefined, paste('Template', i, ))
             }
           } else if ("Time Period within" %in% names(value_dict)) {
             dt <- input[[paste('Time Period within')]]
             if (dt == 'None'){
-              flag <- 0
+              flag_temp <- 0
             } else if (dt == ''){
               undefined <- append(undefined, paste('Template', i, ': Drug prescription time period is unclear.'))
             } else {
               if (dt > value_dict[['Time Period within']]){
-                flag <- 0
+                flag_temp <- 0
               }
             }
           }
@@ -666,12 +665,11 @@ judgement_func <- function(standard, input, output, session){
           
           # Event -------------------------------------------------------------------
           
-          
           event <- input[[paste('event_name_', idx_temp)]]
           if (event == 'None'){
-            flag <- 0
+            flag_temp <- 0
           } else if (event == ''){
-            return
+            
           }
           
           if ('Value from ( include )' %in% names(value_dict) | 'Value from ( not include )' %in% names(value_dict) | 'Value to ( include )' %in% names(value_dict) | 'Value to ( not include )' %in% names(value_dict)){
@@ -679,7 +677,7 @@ judgement_func <- function(standard, input, output, session){
             if (value == ''){
               if ('Value from ( include )' %in% names(value_dict)){
                 if (value < value_dict[['value']]){
-                  return(FALSE)
+                  flag_temp
                 }
               } else if ('Value from ( not include )' %in% names(value_dict)){
                 if (value <= value_dict['Value from ( not include )']){
