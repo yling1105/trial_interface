@@ -4,6 +4,7 @@ library(shinyjs)
 library(shinyTime)
 library(rjson)
 library(shinyWidgets)
+library(shinyalert)
 
 # Read all the json files into the memory ---------------------------------
 
@@ -210,9 +211,7 @@ json2form <- function(value_dict,idx_temp){
   } else if (temp == 'Order'){
 
     # Order -------------------------------------------------------------------
-
     
-    print(value_dict)
     orders <- strsplit(value_dict[['Procedure Name contains']], '[|]')
     orders <- unlist(orders)
     orders <- append(orders, 'None')
@@ -283,19 +282,28 @@ json2form <- function(value_dict,idx_temp){
 judgement_func <- function(standard, input, output, session){
   n_i <- length(standard[['inclusion']])
   n_e <- length(standard[['exclusion']])
-  flag <- -1
   undefined <- c()
-  
+  flag_lst <- c()
   for (i in c(1:n_i)){
 
   # Inclusion ---------------------------------------------------------------
 
     idx <- paste0('inclu_', i)
     temp <- standard[['inclusion']][[i]][['mapped_templates']]
+    
     if (length(temp) > 0){
+      
+      flag_temp_lst <- rep(1, length(temp))
+      logic <- standard[['inclusion']][[i]][['internal_logic']]
+      if ((logic != 'AND') & (logic != 'OR')){
+        
+      }
+      
       for (j in c(1 : length(temp))){
+        
         idx_temp <- paste0(idx, j)
         value_dict <- json.values(temp[[j]])
+        
         if (temp[[j]]['template'] == 'Demographic'){
 
         # Demographic -------------------------------------------------------------
@@ -307,33 +315,35 @@ judgement_func <- function(standard, input, output, session){
           
           if ('Age from ( include )' %in% names(value_dict)){
             if (age < value_dict[['Age from ( include )']]){
-              flag <- 0
+              flag_temp_lst[j] <- 0
             }
           }
           
           if ('Age to ( include )' %in% names(value_dict)){
             if (age > value_dict[['Age to ( include )']]) {
-              flag <- 0
+              flag_temp_lst[j] <- 0
             }
           }
           
           if ('Race is' %in% names(value_dict)){
             if (!(race %in% value_dict[['Race is']])){
-              flag <- 0
+              flag_temp_lst[j] <- 0
             }
           }
           
           if ('Gender' %in% names(value_dict)){
             if (!(sex != value_dict[['Gender']])){
-              flag <- 0
+              flag_temp_lst[j] <- 0
             }
           }
           
           if ('Ethic_Group is' %in% names(value_dict)) {
-            if (!(ethic != value_dict[['Ethic_Group is']])){
-              flag <- 0
+            if (ethic == ''){
+              flag_temp_lst[j] <- 2
+            } else if (!(ethic != value_dict[['Ethic_Group is']])){
+              flag_temp_lst[j] <- 0
             }
-          }
+          } 
         } else if (temp[[j]][['template']] == 'Condition by Diagnosis Code'){
 
           # Diagnosis ---------------------------------------------------------------
@@ -342,8 +352,11 @@ judgement_func <- function(standard, input, output, session){
             icd <- input[[paste0('diag_is_', idx_temp)]]
             if (icd == 'None'){
               flag <- 0
+              return(flag)
             } else if (icd == ''){
               undefined <- append(undefined, paste('Template', i, ': Diagnosis code is undefined.'))
+              flag <- 2
+              
             }
           }
           
@@ -351,6 +364,7 @@ judgement_func <- function(standard, input, output, session){
             icd_h <- input[[paste0('diag_like_', idx_temp)]]
             if (icd_h == 'None'){
               flag <- 0
+              return(flag)
             } else if (icd_h == ''){
               undefined <- append(undefined, paste('Template', i, ': Diagnosis code is undefined.'))
             }
@@ -428,21 +442,25 @@ judgement_func <- function(standard, input, output, session){
             if (value == ''){
               if ('Value from ( include )' %in% names(value_dict)){
                 if (value < value_dict[['value']]){
-                  return(FALSE)
+                  flag <- 0
+                  return(flag)
                 }
               } else if ('Value from ( not include )' %in% names(value_dict)){
                 if (value <= value_dict['Value from ( not include )']){
                   flag <- 0
+                  return(flag)
                 }
               }
               
               if ('Value to ( include )' %in% names(value_dict)) {
                 if (value > value_dict[['Value to ( include )']]){
                   flag <- 0
+                  return(flag)
                 }
               } else if ('Value to ( not include )' %in% names(value_dict)){
                 if (value >= value_dict[['Value to ( not include )']]){
                   flag <- 0
+                  return(flag)
                 }
               }
             }
@@ -454,6 +472,7 @@ judgement_func <- function(standard, input, output, session){
               undefined <- append(undefined, paste('Template', i, ': Event time is not clear.'))
             } else if (et > value_dict[['Time Period within']]){
               flag <- 0
+              return(flag)
             }
           }
         } else if (temp == 'Lab'){
@@ -515,9 +534,9 @@ judgement_func <- function(standard, input, output, session){
               flag <- 0
             }
           }
-          
         }
       }
+      
     }
   }
   
@@ -530,6 +549,7 @@ judgement_func <- function(standard, input, output, session){
     temp <- standard[['exclusion']][[i]][['mapped_templates']]
     logic <- standard[['exclusion']][[i]][['internal_logic']]
     if (length(temp) > 0){
+      flag_temp <- 1
       for (j in c(1 : length(temp))){
         
         idx_temp <- paste0(idx, j)
@@ -554,12 +574,12 @@ judgement_func <- function(standard, input, output, session){
           }
           
           if ('Age to ( include )' %in% names(value_dict)){
-            if (age < value_dict[['Age to ( include )']]) {
-              flag_temp <- 1 * flag_temp
+            if (age > value_dict[['Age to ( include )']]) {
+              flag_temp <- 0
             }
           } else if ('Age to ( not include )'){
-            if (age <= value_dict[['Age to ( include )']]){
-              flag_temp <- 1 * flag_temp
+            if (age >= value_dict[['Age to ( include )']]){
+              flag_temp <- 0
             }
           }
           
@@ -677,21 +697,21 @@ judgement_func <- function(standard, input, output, session){
             if (value == ''){
               if ('Value from ( include )' %in% names(value_dict)){
                 if (value < value_dict[['value']]){
-                  flag_temp
+                  flag_temp <- 0
                 }
               } else if ('Value from ( not include )' %in% names(value_dict)){
                 if (value <= value_dict['Value from ( not include )']){
-                  return(FALSE)
+                  flag_temp <- 0
                 }
               }
               
               if ('Value to ( include )' %in% names(value_dict)) {
                 if (value > value_dict[['Value to ( include )']]){
-                  return(FALSE)
+                  flag_temp <- 0
                 }
               } else if ('Value to ( not include )' %in% names(value_dict)){
                 if (value >= value_dict[['Value to ( not include )']]){
-                  return(FALSE)
+                  flag_temp <- 0
                 }
               }
             }
@@ -702,7 +722,7 @@ judgement_func <- function(standard, input, output, session){
             if (et == ''){
               undefined <- append(undefined, paste('Template', i, ': Event time is not clear.'))
             } else if (et > value_dict[['Time Period within']]){
-              flag <- 0
+              flag_temp <- 0
             }
           }
         } else if (temp == 'Lab'){
@@ -711,7 +731,7 @@ judgement_func <- function(standard, input, output, session){
           
           l_nm <- value_dict[['Lab Name contains']]
           if (l_nm == 'None'){
-            flag <- 0
+            flag_temp <- 0
           } else if (l_nm == ''){
             
           }
@@ -721,21 +741,21 @@ judgement_func <- function(standard, input, output, session){
             if (value == ''){
               if ('Value from ( include )' %in% names(value_dict)){
                 if (value < value_dict[['value']]){
-                  return(FALSE)
+                  flag_temp <- 0
                 }
               } else if ('Value from ( not include )' %in% names(value_dict)){
                 if (value <= value_dict['Value from ( not include )']){
-                  return(FALSE)
+                  flag_temp <- 0
                 }
               }
               
               if ('Value to ( include )' %in% names(value_dict)) {
                 if (value > value_dict[['Value to ( include )']]){
-                  return(FALSE)
+                  flag_temp <- 0
                 }
               } else if ('Value to ( not include )' %in% names(value_dict)){
                 if (value >= value_dict[['Value to ( not include )']]){
-                  return(FALSE)
+                  flag_temp <- 0
                 }
               }
             }
@@ -746,7 +766,7 @@ judgement_func <- function(standard, input, output, session){
             if (lt == ''){
               undefined <- append(undefined, paste('Template', i, ': Lab test time is not clear.'))
             } else if (lt > value_dict[['Time Period within']]) {
-              flag <- 0
+              flag_temp <- 0
             }
           }
           
@@ -761,14 +781,13 @@ judgement_func <- function(standard, input, output, session){
           if ('Time Period within' %in% names(value_dict)){
             ot <- input[[paste0('order_time', idx_temp)]]
             if (ot > value_dict[['Time Period within']]){
-              flag <- 0
+              flag_temp <- 0
             }
           }
-          
         }
       }
     }
   }
   
-  return(TRUE)
+  
 }

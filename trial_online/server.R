@@ -32,8 +32,9 @@ server <- function(input, output, session) {
       idx <- paste0('inclu_', i)
       temp <- data[['inclusion']][[i]][['mapped_templates']]
       text_temp <- data[['inclusion']][[i]][['text']]
+      logic_temp <- data[['inclusion']][[i]][['logic']]
       output_form <- tagAppendChild(output_form, h3(paste('Inclusion criteria', i)))
-      if (length(temp) > 0){
+      if ((length(temp) > 0)){
         output_form <- tagAppendChild(output_form, h5(text_temp))
         for (j in c(1 : length(temp))){
           idx_temp <- paste0(idx, j)
@@ -41,7 +42,6 @@ server <- function(input, output, session) {
           value_dict <- json.values(temp_dict)
           temp_form <- json2form(value_dict, idx_temp)
           output_form <- tagAppendChild(output_form, temp_form)
-          print(output_form)
         }
       } else {
         diag <- prettySwitch(
@@ -83,6 +83,7 @@ server <- function(input, output, session) {
     
     confirm <- actionButton(inputId = "submitForm", label = "Submit",
                             style = "color: #fff; background-color: #1E90FF; border-color: #fff;padding: 5px 5px 5px 5px;margin: 5px 5px 10px 18px; ")
+    output_form <- tagAppendChild(output_form, confirm)
     
     output_form
   })
@@ -91,28 +92,17 @@ server <- function(input, output, session) {
 
 # judgement event ---------------------------------------------------------
   
-  ntext <- eventReactive(input$goButton,{
-    
+  observeEvent(input$submitForm, {
     standard <- sample()
-    
-    flag <- check_cri(standard, input, output, session)
-    if (flag){
-      if (values$cri_index != length(cri_lst)){
-        values$cri_index <- values$cri_index + 1
-        return(cri_lst()[values$cri_index])
-      }
+    flag <-judgement_func(standard, input, output, session)
+    print(flag)
+    if (flag == 0){
+      shinyalert('The patient is not qualified!', type = "error")
+    } else if (flag == 1) {
+      shinyalert('The patient is qualified for the trial!', type = "success")
     } else {
-      return(div(h1('The patients is not qualified!')))
+      shinyalert('')
     }
-    if(values$count != length(questions)){
-      values$count <- values$count + 1
-      return(questions[values$count])
-    }
-    else{
-      # otherwise just return the last questions
-      return(questions[length(questions)])
-    }
-    
   })
   
   
