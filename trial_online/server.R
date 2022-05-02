@@ -34,7 +34,7 @@ server <- function(input, output, session) {
       text_temp <- data[['inclusion']][[i]][['text']]
       logic_temp <- data[['inclusion']][[i]][['logic']]
       output_form <- tagAppendChild(output_form, h3(paste('Inclusion criteria', i)))
-      if ((length(temp) > 0)){
+      if ((length(temp) > 0) & ((logic_temp == 'AND') | logic_temp == 'OR')){
         output_form <- tagAppendChild(output_form, h5(text_temp))
         for (j in c(1 : length(temp))){
           idx_temp <- paste0(idx, j)
@@ -50,7 +50,9 @@ server <- function(input, output, session) {
           status = "success",
           fill = TRUE
         )
-      } 
+        output_form <- tagAppendChild(output_form, diag)
+      }
+      
       output_form <- tagAppendChild(output_form, tags$hr())
     }
     
