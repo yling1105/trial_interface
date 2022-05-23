@@ -8,7 +8,7 @@
 
 server <- function(input, output, session) {
 
-# Upload a json file  -----------------------------------------------------
+# Select a trial -----------------------------------------------------
   
   sample <- eventReactive(input$genForm,{
     trial_temp <- input$selectedTrials
@@ -39,17 +39,17 @@ server <- function(input, output, session) {
         for (j in c(1 : length(temp))){
           idx_temp <- paste0(idx, j)
           temp_dict <- temp[[j]]
-          
           value_dict <- json.values(temp_dict)
           temp_form <- json2form(value_dict, idx_temp)
           output_form <- tagAppendChild(output_form, temp_form)
         }
       } else {
         diag <- prettySwitch(
-          inputId = paste0('txt_inclu_', i),
+          inputId = paste0('txt_inclu_', idx),
           label = text_temp,
           status = "success",
-          fill = TRUE
+          fill = TRUE,
+          value = FALSE
         )
         output_form <- tagAppendChild(output_form, diag)
       }
@@ -67,6 +67,7 @@ server <- function(input, output, session) {
       if ((length(temp) > 0) & ((logic_temp == 'AND') | (logic_temp == 'OR'))){
         output_form <- tagAppendChild(output_form, h5(text_temp))
         for (j in c(1 : length(temp))){
+          #print(paste('Exclu', i, j))
           idx_temp <- paste0(idx, j)
           temp_dict <- temp[[j]]
           #print(temp_dict)
@@ -76,10 +77,11 @@ server <- function(input, output, session) {
         }
       } else{
         diag <- prettySwitch(
-          inputId = paste0('txt_exclu_', i),
+          inputId = paste0('txt_exclu_', idx),
           label = text_temp,
           status = "success",
-          fill = TRUE
+          fill = TRUE,
+          value = FALSE
         )
         output_form <- tagAppendChild(output_form, diag)
       }
@@ -102,23 +104,30 @@ server <- function(input, output, session) {
     res <-judgement_func(standard, input, output, session)
     flag <- res[['flag']]
     undefined <- res[['undefined']]
+    unqualified <- res[['unqualified']]
+    #print(undefined)
+    ul <- paste0(undefined, '<br>')
+    uq <- paste0(unqualified, '<br>')
+    
     if (flag == 0){
-      shinyalert('The patient is not qualified!', type = "error")
+      shinyalert('The patient is not qualified!', 
+                 type = "error",
+                 text = uq,
+                 html = TRUE)
     } else if (flag == 1) {
-      shinyalert('The patient is qualified for the trial!', type = "success")
+      shinyalert('The patient is qualified for the trial!',
+                 type = "success")
     } else {
-      ul <- tags$ul(
-        lapply(seq_len(length(undefined)), function(index){
-          tags$li(undefined[index])
-        })
-      )
       shinyalert(
         title = 'Some information is missing:',
-        text = HTML(ul),
+        text = ul,
         html = TRUE,
         type = 'info'
         )
     }
+    
+    
+    
   })
   
   
