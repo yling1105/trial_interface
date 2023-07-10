@@ -23,10 +23,12 @@ sidebar <- dashboardSidebar(
     id='sidebar',
     style = "position: relative; overflow: visible",
     
+    textInput('pat_id', label='Patient ID:'),
+    
     dateInput('visit_date', label='Visit Date:'),
     #timeInput('visit_time', "Record Time:", seconds = FALSE),
     
-    awesomeCheckboxGroup(
+    awesomeRadio(
       inputId = "selectedTrials",
       label = "Trials", 
       choices = namelst,
